@@ -1,0 +1,1626 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Potager Givré — vegetable ice cream</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500&family=Caveat:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --void: #fff8ec; --bark: #14304d; --cork: rgba(20, 48, 77, 0.14); --drift: rgba(20, 48, 77, 0.4);
+    --cream: #14304d; --cream-2: rgba(20, 48, 77, 0.62); --ember: #2f86d1; --paper: #fff8ec;
+    --sky-top: #cfe8ff; --sky-bot: #fff8ec;
+    --ease: cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { background: var(--void); }
+  body { font-family: "Inter Tight", system-ui, sans-serif; font-feature-settings: "ss01" on; color: var(--cream); background: var(--void); -webkit-font-smoothing: antialiased; overflow-x: hidden; }
+  a { color: inherit; }
+  .label { font-size: 12px; line-height: 1.2; text-transform: uppercase; font-weight: 500; }
+  .dash { display: none; }
+  :focus-visible { outline: 2px solid var(--ember); outline-offset: 4px; }
+
+  /* calques fixes */
+  #gl { position: fixed; inset: 0; width: 100vw; height: 100vh; z-index: 1; pointer-events: none; }
+  .leak { position: fixed; z-index: 2; pointer-events: none; border-radius: 50%; mix-blend-mode: screen; filter: blur(60px); will-change: transform, opacity; }
+  .leak.a { width: 60vw; height: 60vw; background: radial-gradient(circle, rgba(255,150,70,.55), rgba(255,110,40,0) 62%); }
+  .leak.b { width: 45vw; height: 45vw; background: radial-gradient(circle, rgba(255,220,170,.45), rgba(255,200,140,0) 60%); }
+  #grain { position: fixed; inset: -100px; z-index: 50; pointer-events: none; opacity: .6; background-size: 180px 180px; }
+  main, nav, .side { position: relative; z-index: 5; }
+  #lines { position: fixed; inset: 0; width: 100vw; height: 100vh; z-index: 6; pointer-events: none; overflow: visible; }
+  #lines path { fill: none; stroke: var(--cream); stroke-width: 1; }
+  #lines .ring { fill: none; stroke: var(--cream); stroke-width: 1; opacity: .35; }
+  #lines .dot { fill: var(--cream); }
+  #callouts { position: fixed; inset: 0; z-index: 6; pointer-events: none; }
+  .co { position: absolute; left: 0; top: 0; width: 190px; will-change: transform, opacity; opacity: 0; }
+  .co .i { color: var(--ember); font-size: 11px; font-weight: 500; font-variant-numeric: tabular-nums; }
+  .co h4 { font-size: 13px; line-height: 1.1; font-weight: 500; text-transform: uppercase; margin: 4px 0 4px; }
+  .co p { font-size: 13px; line-height: 1.35; color: var(--cream-2); }
+  .co.big { width: 260px; }
+  .co.big h4 { font-size: clamp(20px, 1.8vw, 28px); line-height: .95; margin: 6px 0 8px; }
+  .co.big p { font-size: 14px; }
+  .co.l { text-align: right; }
+  @media (max-width: 900px) { #lines, #callouts { display: none; } }
+  #tint { position: fixed; inset: 0; z-index: 0; background: radial-gradient(circle at 82% 6%, rgba(255, 252, 230, .35), rgba(255, 246, 210, .1) 18%, rgba(255, 255, 255, 0) 38%), linear-gradient(180deg, var(--sky-top) 0%, var(--sky-bot) 78%); }
+  #giant { position: fixed; inset: 0; z-index: 0; display: grid; place-items: end center; pointer-events: none; opacity: 0; overflow: hidden; }
+  #giant span { transform-origin: 50% 100%; margin-bottom: -0.12em; font-weight: 500; text-transform: uppercase; line-height: .8; white-space: nowrap; letter-spacing: -0.02em; transition: opacity 300ms var(--ease), transform 600ms var(--ease); }
+  #giant span.out { opacity: 0; transform: translateY(8%); }
+  /* ingrédients translucides autour de la glace, un jeu par parfum */
+  #orn { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
+  #orn svg { position: absolute; left: 0; top: 0; width: calc(var(--s) * (0.5vw + 0.5vh)); height: calc(var(--s) * (0.5vw + 0.5vh)); fill: #fff; overflow: visible; display: none; will-change: transform, opacity; }
+  .stage { transition: color 400ms var(--ease); }
+  .recbtn { margin-top: 22px; cursor: pointer; font: inherit; font-size: 12px; font-weight: 500; text-transform: uppercase; color: inherit; background: transparent; border-color: currentColor; padding: 0 18px; }
+  .recbtn:hover { background: var(--cream); color: var(--void); }
+  /* carnet de recette plein écran */
+  #carnet { --cbg: #cfe6ff; --cink: #14304d; position: fixed; inset: 0; z-index: 90; background: var(--cbg); color: var(--cink);
+    display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); gap: 48px; padding: 72px 56px 48px; overflow-y: auto; overflow-x: hidden;
+    clip-path: circle(0 at var(--ox, 50%) var(--oy, 50%)); visibility: hidden; transition: clip-path 800ms var(--ease), visibility 0s 800ms; }
+  #carnet.open { clip-path: circle(150% at var(--ox, 50%) var(--oy, 50%)); visibility: visible; transition: clip-path 900ms var(--ease); }
+  .cx { position: absolute; top: 24px; right: 24px; height: 40px; padding: 0 18px; border-radius: 999px; border: 1.5px solid currentColor; background: transparent; color: inherit; cursor: pointer; font: inherit; font-size: 12px; font-weight: 500; text-transform: uppercase; }
+  .ck { opacity: .75; }
+  .ct { font-size: clamp(56px, 7vw, 120px); line-height: .85; font-weight: 500; text-transform: uppercase; margin: 14px 0 32px; }
+  .ct small { display: block; font-size: .42em; opacity: .75; margin-top: 10px; }
+  .paper { position: relative; background: #ffffff; color: #14304d; border-radius: 6px; padding: 30px 30px 26px; transform: rotate(-1.6deg); max-width: 460px;
+    background-image: radial-gradient(rgba(47, 134, 209, .22) 1px, transparent 1.6px); background-size: 18px 18px; }
+  .tape { position: absolute; top: -12px; left: 50%; width: 96px; height: 26px; margin-left: -48px; background: rgba(180, 214, 245, .7); transform: rotate(3deg); }
+  .paper .label { opacity: .55; margin-bottom: 14px; }
+  .cing { list-style: none; display: grid; gap: 10px; }
+  .cing li { display: grid; grid-template-columns: 104px 1fr; gap: 12px; font-size: 16px; line-height: 1.3; }
+  .cing b { font-weight: 500; font-variant-numeric: tabular-nums; }
+  .hand { font-family: "Caveat", cursive; font-weight: 700; font-size: 25px; line-height: 1.1; color: #2f86d1; margin-top: 22px; transform: rotate(-2deg); }
+  .cr { display: flex; flex-direction: column; justify-content: center; gap: 22px; }
+  .cards { position: relative; height: min(58vh, 460px); }
+  .card2 { position: absolute; inset: 0; background: #ffffff; color: #14304d; border-radius: 18px; padding: 34px 36px; display: flex; flex-direction: column;
+    transition: transform 700ms var(--ease), opacity 500ms var(--ease); opacity: 0; transform: translateX(60px) rotate(4deg); pointer-events: none; }
+  .card2 .n { font-size: clamp(80px, 9vw, 140px); line-height: .8; font-weight: 500; font-variant-numeric: tabular-nums; }
+  .card2 h4 { font-size: clamp(24px, 2.4vw, 36px); line-height: .95; font-weight: 500; text-transform: uppercase; margin: 22px 0 12px; }
+  .card2 p { font-size: clamp(17px, 1.5vw, 21px); line-height: 1.35; color: rgba(20, 48, 77, .72); max-width: 30ch; }
+  .card2 .time { margin-top: auto; align-self: flex-start; font-size: 12px; font-weight: 500; text-transform: uppercase; background: #e3f1ff; color: #14304d; border-radius: 999px; padding: 8px 14px; }
+  .card2 .scrib { position: absolute; right: 30px; bottom: 26px; font-family: "Caveat", cursive; font-size: 24px; color: #2f86d1; transform: rotate(-4deg); }
+  .card2.cur { opacity: 1; transform: none; pointer-events: auto; }
+  .card2.nx { opacity: .55; transform: translate(18px, 14px) rotate(3deg) scale(.97); z-index: -1; }
+  .card2.nx2 { opacity: .3; transform: translate(34px, 26px) rotate(6deg) scale(.94); z-index: -2; }
+  .card2.pv { opacity: 0; transform: translateX(-80px) rotate(-6deg); }
+  .cnav { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+  .pill { height: 44px; padding: 0 20px; border-radius: 999px; border: 1.5px solid currentColor; background: transparent; color: inherit; cursor: pointer; font: inherit; font-size: 12px; font-weight: 500; text-transform: uppercase; }
+  .pill:hover { background: var(--cink); color: var(--cbg); }
+  .pill[disabled] { opacity: .3; cursor: default; }
+  .cdots { display: flex; gap: 8px; justify-content: center; }
+  .cdots i { width: 8px; height: 8px; border-radius: 50%; background: currentColor; opacity: .3; transition: opacity 300ms, transform 300ms; }
+  .cdots i.on { opacity: 1; transform: scale(1.3); }
+  @media (max-width: 900px) { #carnet { grid-template-columns: 1fr; padding: 72px 20px 32px; gap: 28px; } .cards { height: 340px; } .paper { max-width: none; } }
+
+  /* chargement */
+  #loader { position: fixed; inset: 0; z-index: 100; background: var(--void); display: flex; flex-direction: column; justify-content: space-between; padding: 24px; transition: opacity 900ms var(--ease), visibility 0s 900ms; }
+  #loader.done { opacity: 0; visibility: hidden; }
+  #loader .pct { font-size: clamp(72px, 13vw, 220px); line-height: .9; font-weight: 500; font-variant-numeric: tabular-nums; }
+  #loader .row { display: flex; justify-content: space-between; align-items: end; }
+
+  /* navigation */
+  nav { position: fixed; inset: 0 0 auto 0; z-index: 60; display: flex; justify-content: space-between; align-items: center; padding: 24px; }
+  nav .links { display: flex; gap: 28px; }
+  nav a { text-decoration: none; opacity: .45; transition: opacity 200ms var(--ease); }
+  nav > a:first-child, nav a:hover, nav a.on { opacity: 1; }
+  .side { position: fixed; right: 24px; top: 50%; transform: translateY(-50%) rotate(90deg); transform-origin: right center; z-index: 60; white-space: nowrap; color: var(--cream-2); }
+
+  section { min-height: 100vh; position: relative; }
+
+  /* héro */
+  .hero { height: 100vh; min-height: 640px; display: flex; flex-direction: column; justify-content: space-between; padding: 96px 24px 24px; }
+  .hero h1 { font-size: clamp(72px, 13vw, 220px); line-height: .9; font-weight: 500; text-transform: uppercase; }
+  .hero h1 span { display: block; overflow: hidden; }
+  .hero h1 span i { display: block; font-style: normal; transform: translateY(105%); transition: transform 1400ms var(--ease); }
+  body.ready .hero h1 span i { transform: none; }
+  body.ready .hero h1 span:nth-child(2) i { transition-delay: 120ms; }
+  .hero .tag { margin-bottom: 18px; }
+  .hero-bottom { display: flex; justify-content: space-between; align-items: end; gap: 24px; }
+  .card { max-width: 360px; border-radius: 12px; background: rgba(255, 255, 255, .7); padding: 24px; }
+  .card .label { margin-bottom: 12px; }
+  .card p { font-size: 15px; line-height: 1.4; color: var(--cream-2); }
+  .mini { width: 220px; border-radius: 12px; background: rgba(255, 255, 255, .7); padding: 18px; display: flex; flex-direction: column; gap: 14px; }
+  .ghost { display: inline-flex; align-items: center; justify-content: center; height: 34px; border: 1px solid var(--cream); border-radius: 22.5px; padding: 0 16px; text-decoration: none; transition: background-color 200ms var(--ease), color 200ms var(--ease); }
+  .ghost:hover { background: var(--bark); color: var(--paper); }
+
+  /* mise en page à trois colonnes (texte / objet / texte) */
+  .tri { height: 100vh; display: grid; grid-template-columns: 1fr minmax(240px, 36vw) 1fr; gap: 18px; align-items: center; padding: 96px 24px 40px; }
+  .tri h2 { font-size: clamp(40px, 4.4vw, 72px); line-height: .9; font-weight: 500; text-transform: uppercase; }
+  .tri .body { font-size: clamp(20px, 1.9vw, 29px); line-height: 1.26; font-weight: 400; max-width: 20ch; }
+  .tri .note { margin-top: 24px; color: var(--cream-2); }
+
+  [data-reveal] { opacity: 0; transform: translateY(28px); filter: blur(6px); transition: opacity 900ms var(--ease), transform 1100ms var(--ease), filter 900ms var(--ease); }
+  [data-reveal].in { opacity: 1; transform: none; filter: none; }
+
+  /* vue éclatée */
+  .anat { height: 120vh; }
+  .anat .inner { position: sticky; top: 0; height: 100vh; padding: 96px 24px 40px; }
+  .anat h2 { font-size: clamp(40px, 4.4vw, 72px); line-height: .9; font-weight: 500; text-transform: uppercase; }
+  .part { position: absolute; width: min(30vw, 380px); }
+  .part .k { color: var(--cream-2); margin-bottom: 10px; display: flex; gap: 12px; align-items: center; }
+  .part.r .k { flex-direction: row-reverse; }
+  .part h3 { font-size: clamp(22px, 2vw, 32px); line-height: .95; font-weight: 500; text-transform: uppercase; }
+  .part p { margin-top: 10px; font-size: 15px; line-height: 1.4; color: var(--cream-2); max-width: 32ch; }
+  .part.l { left: 24px; } .part.r { right: 60px; text-align: right; } .part.r p { margin-left: auto; }
+
+  /* parfums */
+  .track { position: relative; }
+  .stage { position: sticky; top: 0; height: 100vh; display: grid; grid-template-columns: 1fr minmax(240px, 36vw) 1fr; gap: 18px; align-items: center; padding: 96px 24px 40px; }
+  .count { color: var(--cream-2); margin-bottom: 24px; display: flex; gap: 12px; align-items: center; }
+  .count .bar { width: 120px; height: 1px; background: var(--cork); position: relative; }
+  .count .bar i { position: absolute; inset: 0 auto 0 0; background: var(--cream); width: 0; }
+  .stage h2 { font-size: clamp(40px, 4.4vw, 72px); line-height: .9; font-weight: 500; text-transform: uppercase; }
+  .stage h2 small { display: block; color: var(--cream-2); font-size: .5em; margin-top: 12px; }
+  .kind { margin-top: 28px; color: var(--cream-2); }
+  .stage .body { font-size: clamp(20px, 1.8vw, 29px); line-height: 1.26; max-width: 22ch; margin-bottom: 36px; }
+  .stage hr { margin: 24px 0 18px; max-width: 420px; }
+  .facts { max-width: 420px; }
+  .kcal { display: flex; align-items: baseline; gap: 12px; margin-bottom: 18px; }
+  .kcal b { font-size: clamp(48px, 4.6vw, 72px); line-height: .9; font-weight: 500; font-variant-numeric: tabular-nums; }
+  .facts dl { display: grid; grid-template-columns: repeat(3, auto); gap: 18px 28px; justify-content: start; }
+  .facts dl div { display: flex; flex-direction: column; gap: 4px; }
+  .facts dt { color: var(--cream-2); font-size: 11px; text-transform: uppercase; font-weight: 500; }
+  .facts dd { font-size: 24px; font-weight: 500; font-variant-numeric: tabular-nums; line-height: 1; }
+  .facts .meter { grid-column: 1 / -1; height: 1px; background: var(--cork); margin-top: -4px; position: relative; }
+  .facts .meter i { position: absolute; inset: 0 auto 0 0; width: 0; background: var(--cream-2); transition: width 800ms var(--ease); }
+  .facts .plus { margin-top: 18px; font-size: 14px; color: var(--cream-2); line-height: 1.4; }
+  .facts .plus b { color: var(--cream); font-weight: 500; }
+  .swap { transition: opacity 520ms var(--ease), transform 700ms var(--ease), filter 520ms var(--ease); }
+  .swap.out { opacity: 0; transform: translateY(-16px); filter: blur(8px); transition-duration: 220ms; }
+  .swap.pre { opacity: 0; transform: translateY(22px); filter: blur(8px); transition: none !important; }
+  .kf { position: absolute; left: 0; width: 1px; height: 100vh; pointer-events: none; }
+
+  /* kiosques */
+  .stalls { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; align-items: center; padding: 140px 24px 96px; }
+  .stalls h2 { font-size: clamp(48px, 6vw, 100px); line-height: .9; font-weight: 500; text-transform: uppercase; margin-bottom: 48px; }
+  .stall { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; padding: 22px 0; align-items: baseline; }
+  .stall h3 { font-size: clamp(28px, 2.8vw, 41px); line-height: .9; font-weight: 500; text-transform: uppercase; }
+  .stall p { font-size: 16px; color: var(--cream-2); margin-top: 8px; }
+  .stall .h { text-align: right; color: var(--cream-2); line-height: 1.7; }
+
+  /* pied de page */
+  footer { position: relative; z-index: 5; padding: 120px 24px 24px; overflow: hidden; } /* le filigrane ne doit pas élargir la page sur mobile */
+  .news { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; align-items: end; }
+  .news h2 { font-size: clamp(40px, 5vw, 72px); line-height: .9; font-weight: 500; text-transform: uppercase; max-width: 12ch; }
+  form { display: flex; align-items: center; gap: 12px; }
+  input { flex: 1; min-width: 0; height: 44px; background: rgba(255, 255, 255, .8); border: 0; color: var(--cream); font: inherit; font-size: 16px; padding: 0 20px; border-radius: 22.5px; }
+  input::placeholder { color: var(--drift); }
+  input:focus { outline: 2px solid var(--ember); outline-offset: 2px; }
+  .btn { height: 44px; padding: 0 24px; border-radius: 36px; background: var(--bark); color: var(--paper); border: 0; font: inherit; font-size: 12px; font-weight: 500; text-transform: uppercase; cursor: pointer; transition: background-color 150ms var(--ease); }
+  .btn:hover { background: #382416; }
+  .formnote { margin-top: 12px; color: var(--cream-2); min-height: 16px; }
+  .giant { font-size: 16.4vw; line-height: .8; font-weight: 500; text-transform: uppercase; white-space: nowrap; margin: 96px 0 24px; color: rgba(47, 134, 209, .12); }
+  .legal { display: flex; justify-content: space-between; gap: 18px; padding-top: 18px; flex-wrap: wrap; }
+  .legal .credit { color: var(--ember); }
+
+  @media (min-width: 901px) { .tri, .stage, .stalls { padding-right: 72px; } .part.r { right: 72px; } }
+  @media (max-width: 900px) {
+    .side, nav .links a:not(:last-child) { display: none; }
+    .hero { padding: 88px 20px 20px; }
+    .hero-bottom { flex-direction: column; align-items: stretch; }
+    .card, .mini { max-width: none; width: auto; }
+    .tri { grid-template-columns: 1fr; grid-template-rows: auto 1fr auto; padding: 88px 20px 24px; align-items: start; }
+    .tri > div:last-child { align-self: end; }
+    .part { width: 44vw; } .part.r { right: 20px; } .part.l { left: 20px; }
+    .part p { display: none; }
+    .stage { grid-template-columns: 1fr; grid-template-rows: auto 1fr auto; gap: 8px; padding: 80px 20px 24px; align-items: stretch; }
+    .stage h2 { font-size: 36px; }
+    .kind, .stage .body, .stage hr, .facts .plus, .facts .meter { display: none; }
+    .kcal b { font-size: 40px; }
+    .facts dl { grid-template-columns: 1fr auto 1fr auto; column-gap: 16px; row-gap: 6px; }
+    .stalls, .news { grid-template-columns: 1fr; }
+    .stalls > div:first-child { display: none; }
+    .stall { grid-template-columns: 1fr; } .stall .h { text-align: left; }
+  }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } [data-reveal] { opacity: 1; transform: none; filter: none; } }
+</style>
+<script type="importmap">
+{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js" } }
+</script>
+</head>
+<body>
+
+<div id="loader" aria-hidden="true">
+  <div class="row label"><span>Potager Givré</span><span>Batch 2026</span></div>
+  <div class="row"><div class="pct" id="pct">00</div><div class="label">Chilling…</div></div>
+</div>
+
+<div id="tint" aria-hidden="true"></div>
+<div id="giant" aria-hidden="true"><span></span></div>
+<div id="orn" aria-hidden="true"></div>
+<canvas id="gl" aria-hidden="true"></canvas>
+<svg id="lines" aria-hidden="true"></svg>
+<div id="callouts"></div>
+<div id="carnet" aria-hidden="true" role="dialog" aria-label="Recipe">
+  <button class="cx label" type="button">Close</button>
+  <div class="cl">
+    <div class="label ck">Recipe · about 1 litre · serves 6</div>
+    <h3 class="ct"></h3>
+    <div class="paper"><i class="tape"></i><div class="label">You'll need</div><ul class="cing"></ul><p class="hand"></p></div>
+  </div>
+  <div class="cr">
+    <div class="cards"></div>
+    <div class="cnav"><button class="pill prev label" type="button">← Back</button><span class="label ccount"></span><button class="pill next label" type="button">Next →</button></div>
+    <div class="cdots"></div>
+  </div>
+</div>
+<div id="grain" aria-hidden="true"></div>
+
+<nav class="label">
+  <a href="#top">Potager Givré</a>
+  <div class="links">
+    <a href="#top" class="on" data-nav="top">Intro</a>
+    <a href="#anatomie" data-nav="anatomie">Anatomy</a>
+    <a href="#parfums" data-nav="parfums">Flavours</a>
+    <a href="#kiosques" data-nav="kiosques">Kiosks</a>
+  </div>
+</nav>
+<div class="side label">Potager Givré · model 06</div>
+
+<main>
+  <section class="hero" id="top" data-kf='{"x":0.21,"y":-0.02,"s":1.02,"rx":0.42,"ry":0.2,"rz":-0.14,"ex":0}'>
+    <div>
+      <div class="tag label">Eat your vegetables. For once, you'll love it.</div>
+      <h1><span><i>Potager</i></span><span><i>Givré</i></span></h1>
+    </div>
+    <div class="hero-bottom">
+      <div class="card">
+        <div class="label">Handmade ice cream from garden vegetables</div>
+        <hr class="dash">
+        <p>Six seasonal vegetables, blended the day they're picked, churned by hand. Scroll down: the ice cream follows you.</p>
+      </div>
+      <div class="mini">
+        <div class="label">6 flavours · 3 kiosks</div>
+        <a class="ghost label" href="#parfums">See the flavours</a>
+      </div>
+    </div>
+  </section>
+
+  <section id="intro">
+    <div class="tri" data-kf='{"x":0,"y":0,"s":0.9,"rx":0.12,"ry":0.95,"rz":0.04,"ex":0}'>
+      <div data-reveal><h2>Not just<br>an ice cream.</h2><div class="note label">Vegetables · fruit · nothing else</div></div>
+      <div></div>
+      <div data-reveal><p class="body">Vegetables picked in the morning, blended the same day, churned by hand. Nothing but what grows.</p></div>
+    </div>
+  </section>
+
+  <section class="anat" id="anatomie">
+    <div class="inner" data-kf='{"x":0,"y":0.0,"s":0.66,"rx":0.22,"ry":1.75,"rz":0,"ex":1}'>
+      <h2 data-reveal>Anatomy</h2>
+    </div>
+  </section>
+
+  <section class="track" id="parfums">
+    <div class="kf" style="top:0" data-kf='{"x":0,"y":0,"s":0.84,"rx":0.06,"ry":2.2,"rz":0,"ex":0}'></div>
+    <div class="kf" style="bottom:0" data-kf='{"x":0,"y":0,"s":0.84,"rx":0.06,"ry":2.2,"rz":0,"ex":0}'></div>
+    <div class="stage">
+      <div>
+        <div class="count label"><span id="idx">01</span><span>/</span><span>06</span></div>
+        <h2 class="swap" id="name">Avocado<small>+ lime</small></h2>
+        <div class="kind label swap" id="kind">Ice cream · dairy-free · PLU 4046</div>
+        <button class="ghost label recbtn" id="recBtn" type="button">See the recipe</button>
+      </div>
+      <div></div>
+      <div>
+        <p class="body swap" id="body">Creamy without a drop of cream. Yes, really.</p>
+        <div class="facts swap" id="facts"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="stalls" id="kiosques" data-kf='{"x":-0.25,"y":0.0,"s":0.66,"rx":0.18,"ry":3.4,"rz":0.12,"ex":0}'>
+    <div></div>
+    <div>
+      <h2 data-reveal>Three kiosks</h2>
+      <div class="stall" data-reveal><div><h3>The Harbour</h3><p>On the promenade, facing the beach</p></div><div class="h label">Mon – Thu 16:00 – 23:00<br>Fri – Sun 14:00 – 00:00</div></div>
+      <div class="stall" data-reveal><div><h3>The Park</h3><p>By the big fountain</p></div><div class="h label">Mon – Thu 16:00 – 23:00<br>Fri – Sun 14:00 – 00:00</div></div>
+      <div class="stall" data-reveal><div><h3>The Studios</h3><p>In the artists' studio courtyard</p></div><div class="h label">Mon – Thu 12:00 – 22:00<br>Fri – Sun 12:00 – 00:00</div></div>
+    </div>
+  </section>
+</main>
+
+<footer id="news" data-kf='{"x":0.3,"y":-0.2,"s":0.36,"rx":0.35,"ry":4.4,"rz":-0.2,"ex":0}'>
+  <div class="news">
+    <h2 data-reveal>A new vegetable every season</h2>
+    <div data-reveal>
+      <form id="form">
+        <label for="email" style="position:absolute;left:-9999px">Email</label>
+        <input type="email" id="email" placeholder="you@email.com" required>
+        <button class="btn" type="submit">Sign up</button>
+      </form>
+      <div class="formnote label" id="formnote">One email per season. No more.</div>
+    </div>
+  </div>
+  <div class="giant" aria-hidden="true">Potager Givré</div>
+  <div class="legal label">
+    <span>© 2026 Potager Givré · nutrition values per 100 g, for guidance only</span>
+    <span class="credit">Fictional brand · demo project</span>
+  </div>
+</footer>
+
+<script>
+/* ---------- parties sans 3D (marchent même si la 3D ne charge pas) ---------- */
+(function () {
+  // grain de film
+  const tiles = [];
+  for (let k = 0; k < 4; k++) {
+    const c = document.createElement("canvas"); c.width = c.height = 180;
+    const x = c.getContext("2d"), d = x.createImageData(180, 180);
+    for (let i = 0; i < d.data.length; i += 4) { const v = Math.random() * 255; d.data[i] = d.data[i+1] = d.data[i+2] = 40 + v * 0.3; d.data[i+3] = Math.random() * 12; }
+    x.putImageData(d, 0, 0); tiles.push("url(" + c.toDataURL() + ")");
+  }
+  const g = document.getElementById("grain"); let gi = 0;
+  setInterval(() => { g.style.backgroundImage = tiles[gi++ % 4]; g.style.transform = `translate(${(Math.random()*80)|0}px,${(Math.random()*80)|0}px)`; }, 90);
+
+  // textes qui apparaissent
+  const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { e.target.classList.add("in"); } }), { threshold: 0.2 });
+  document.querySelectorAll("[data-reveal]").forEach((el, i) => { el.style.transitionDelay = ((i % 3) * 90) + "ms"; io.observe(el); });
+
+  // formulaire
+  document.getElementById("form").addEventListener("submit", e => {
+    e.preventDefault();
+    document.getElementById("formnote").textContent = "Thanks. The next vegetable is on its way to your inbox.";
+    e.target.reset();
+  });
+
+  // chargement : on ne bloque jamais plus de 7 s
+  window.__finishLoad = function () {
+    if (window.__loaded) return; window.__loaded = true;
+    const p = document.getElementById("pct"); let v = parseInt(p.textContent) || 0;
+    const t = setInterval(() => { v = Math.min(100, v + 7); p.textContent = String(v).padStart(2, "0"); if (v >= 100) { clearInterval(t); document.getElementById("loader").classList.add("done"); document.body.classList.add("ready"); } }, 30);
+  };
+  let fake = 0; const pf = setInterval(() => { if (window.__loaded) return clearInterval(pf); fake = Math.min(80, fake + Math.random() * 9); document.getElementById("pct").textContent = String(fake | 0).padStart(2, "0"); }, 120);
+  setTimeout(window.__finishLoad, 7000);
+})();
+</script>
+
+<script type="module">
+import * as THREE from "three";
+
+/* ================= données ================= */
+const F_ = [
+  { name: "Carrot", with: "ginger", kind: "Ice cream", plu: "4562", col: "#ffa95e", bg: "#ffb878", ink: "dark", rough: 0.6, cc: 0.05,
+    skin: { marble: "rgba(200,90,20,.07)", bits: [{ n: 500, s: [0.8, 2.2], c: "rgba(210,80,10,A)" }, { n: 60, s: [1, 2], c: "rgba(235,215,140,A)", long: 2 }] },
+    text: "Sweet at first, then the ginger kicks in and wakes everything up.", n: { kcal: 142, lip: 6.5, glu: 19, suc: 16, pro: 2.8, fib: 1.4 }, plus: "<b>Beta-carotene</b> from the carrot, which your body turns into vitamin A." },
+  { name: "Beetroot", with: "raspberry", kind: "Ice cream", plu: "4539", col: "#ec8bb0", bg: "#f7a8c8", ink: "dark", rough: 0.58, cc: 0.08,
+    skin: { marble: "rgba(150,0,60,.12)", bits: [{ n: 900, s: [0.6, 1.6], c: "rgba(90,10,30,A)" }, { n: 60, s: [3, 6], c: "rgba(170,20,70,A)" }] },
+    text: "A deep pink that stains your tongue a little. On purpose.", n: { kcal: 138, lip: 6.0, glu: 19.5, suc: 17, pro: 2.7, fib: 1.8 }, plus: "<b>Folate</b> from the beetroot, with raspberry tartness for balance." },
+  { name: "Garden pea", with: "mint", kind: "Ice cream", plu: "4672", col: "#d3eba6", bg: "#addf9f", ink: "dark", rough: 0.6, cc: 0.05,
+    skin: { marble: "rgba(60,120,40,.07)", bits: [{ n: 450, s: [0.8, 2.2], c: "rgba(25,90,30,A)", long: 2.4 }] },
+    text: "Fresh as a harvest morning. The ones who say no come back for more.", n: { kcal: 150, lip: 6.8, glu: 18, suc: 14, pro: 4.2, fib: 2.6 }, plus: "<b>Plant protein and fibre</b> from the peas. The most protein of the six." },
+  { name: "Sweet potato", with: "cinnamon", kind: "Ice cream", plu: "4816", col: "#f2b27a", bg: "#f2c48c", ink: "dark", rough: 0.62, cc: 0.05,
+    skin: { marble: "rgba(150,80,30,.09)", bits: [{ n: 1500, s: [0.4, 1], c: "rgba(110,55,20,A)" }, { n: 160, s: [3, 7], c: "rgba(170,90,25,A)", shape: "shard" }] },
+    text: "The winter dessert that thinks it's a pie.", n: { kcal: 168, lip: 7.2, glu: 23, suc: 18, pro: 3.0, fib: 1.9 }, plus: "<b>Vitamin A</b> from the sweet potato. The most indulgent of the six." },
+  { name: "Avocado", with: "lime", kind: "Ice cream · dairy-free", plu: "4046", col: "#c2de8c", bg: "#d6e47c", ink: "dark", rough: 0.52, cc: 0.12,
+    skin: { marble: "rgba(90,130,30,.07)", bits: [{ n: 700, s: [0.6, 1.8], c: "rgba(70,140,20,A)", long: 2.6 }] },
+    text: "Creamy without a drop of cream. Yes, really.", n: { kcal: 176, lip: 11.5, glu: 17, suc: 15, pro: 1.8, fib: 3.1 }, plus: "<b>Good unsaturated fats</b> from the avocado, and the most fibre." },
+  { name: "Tomato", with: "basil", kind: "Sorbet", plu: "4664", col: "#ea4f3d", bg: "#ff9e8a", ink: "dark", rough: 0.3, cc: 0.45,
+    skin: { marble: "rgba(180,20,10,.05)", bits: [{ n: 160, s: [0.5, 1.2], c: "rgba(120,10,10,A)" }, { n: 70, s: [1.2, 2.6], c: "rgba(40,110,40,A)", long: 2 }] },
+    text: "The sorbet for scorching afternoons, with a real basil leaf.", n: { kcal: 98, lip: 0.2, glu: 24, suc: 21, pro: 0.7, fib: 0.9 }, plus: "<b>Lycopene</b> from the tomato. The lightest of the six, almost fat-free." }
+];
+// ordre d'affichage : l'avocat ouvre, la tomate rouge ferme
+const ORDER = [4, 2, 0, 3, 1, 5]; // avocat, petit pois, carotte, patate douce, betterave, tomate : du vert au rouge
+const F = ORDER.map(i => F_[i]);
+F.forEach(f => { const c = new THREE.Color(f.col), h = {}; c.getHSL(h); c.setHSL(h.h, Math.min(1, h.s * 1.3 + 0.18), Math.min(0.66, Math.max(0.6, h.l - 0.04))); f.bg = "#" + c.getHexString(); }); // fond : la couleur de la glace, ravivée
+const ROWS = [["lip", "Fat", 12], ["glu", "Carbs", 25], ["suc", "of which sugars", 25], ["pro", "Protein", 5], ["fib", "Fibre", 4]];
+const fmt = v => String(v) + " g";
+const el = id => document.getElementById(id);
+const clamp = (v, a = 0, b = 1) => Math.min(b, Math.max(a, v));
+const sstep = (a, b, x) => { const t = clamp((x - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
+const ease = t => t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+const lerp = (a, b, t) => a + (b - a) * t;
+const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+/* ================= bruit (pour des formes organiques) ================= */
+function hash(x, y, z) {
+  let h = Math.imul(x, 374761393) ^ Math.imul(y, 668265263) ^ Math.imul(z, 1440662683);
+  h = Math.imul(h ^ (h >>> 13), 1274126177); h ^= h >>> 16;
+  return (h >>> 0) / 4294967295;
+}
+function noise(x, y, z) {
+  const xi = Math.floor(x), yi = Math.floor(y), zi = Math.floor(z);
+  const xf = x - xi, yf = y - yi, zf = z - zi;
+  const u = xf * xf * (3 - 2 * xf), v = yf * yf * (3 - 2 * yf), w = zf * zf * (3 - 2 * zf);
+  const c = (a, b, d) => hash(xi + a, yi + b, zi + d);
+  const x00 = lerp(c(0,0,0), c(1,0,0), u), x10 = lerp(c(0,1,0), c(1,1,0), u);
+  const x01 = lerp(c(0,0,1), c(1,0,1), u), x11 = lerp(c(0,1,1), c(1,1,1), u);
+  return lerp(lerp(x00, x10, v), lerp(x01, x11, v), w) * 2 - 1;
+}
+
+/* ================= scène ================= */
+const canvas = el("gl");
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+renderer.setPixelRatio(Math.min(2, devicePixelRatio));
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.0;
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(28, 1, 0.1, 100);
+camera.position.set(0, 0, 12);
+
+// éclairage : lumière chaude en haut à droite + liseré derrière
+scene.add(new THREE.HemisphereLight(0xdcefff, 0x8a6a50, 0.75));
+// environnement doux peint à la main (studio clair, une boîte à lumière) : des reflets vrais plutôt que du plastique
+{
+  const c = document.createElement("canvas"); c.width = 512; c.height = 256; const x = c.getContext("2d");
+  const g = x.createLinearGradient(0, 0, 0, 256);
+  g.addColorStop(0, "#fff6ea"); g.addColorStop(0.48, "#f3ece4"); g.addColorStop(0.56, "#b8a796"); g.addColorStop(1, "#5c4b40");
+  x.fillStyle = g; x.fillRect(0, 0, 512, 256);
+  [[330, 70, 60, 1], [110, 90, 45, 0.5]].forEach(([px, py, r, a]) => { const s = x.createRadialGradient(px, py, 0, px, py, r); s.addColorStop(0, `rgba(255,255,255,${a})`); s.addColorStop(1, "rgba(255,255,255,0)"); x.fillStyle = s; x.fillRect(0, 0, 512, 256); });
+  const t = new THREE.CanvasTexture(c); t.mapping = THREE.EquirectangularReflectionMapping; t.colorSpace = THREE.SRGBColorSpace;
+  scene.environment = new THREE.PMREMGenerator(renderer).fromEquirectangular(t).texture;
+  scene.environmentIntensity = 0.4;
+}
+const key = new THREE.DirectionalLight(0xffe2bf, 2.6); key.position.set(5, 7, 6); scene.add(key);
+const rim = new THREE.DirectionalLight(0xffd2a0, 1.4); rim.position.set(-6, 3, -5); scene.add(rim);
+const fill = new THREE.DirectionalLight(0xc8d8ff, 0.35); fill.position.set(-4, -2, 6); scene.add(fill);
+
+const wrap = new THREE.Group(); scene.add(wrap);   // reçoit position / rotation / taille
+const model = new THREE.Group(); wrap.add(model);
+
+/* ---- coupelle gaufrée à fond plat, bord ondulé ---- */
+const CUP = { BOT: -0.42, TOP: 1.0, R: 1.2, RB: 0.8 };
+function buildCone() {
+  const { BOT, TOP, R, RB } = CUP, H = TOP - BOT;
+  const U = 240, ND = 26, V = 120, cell = 2 * Math.PI * R / 30;
+  const pos = [], col = [], idx = [];
+  const cPit = new THREE.Color().setRGB(0.80, 0.50, 0.20, THREE.SRGBColorSpace);
+  const cRib = new THREE.Color().setRGB(0.97, 0.76, 0.46, THREE.SRGBColorSpace);
+  const cBurn = new THREE.Color().setRGB(0.56, 0.30, 0.11, THREE.SRGBColorSpace);
+  const cBand = new THREE.Color().setRGB(0.93, 0.71, 0.41, THREE.SRGBColorSpace);
+  const c = new THREE.Color();
+  const grid = (qu, qv) => {
+    const fu = qu - Math.floor(qu), fv = qv - Math.floor(qv);
+    const d = Math.min(fu, 1 - fu, fv, 1 - fv);
+    return [Math.pow(1 - sstep(0.05, 0.18, d), 1.4), sstep(0.14, 0.36, d)];
+  };
+  const paint = (rib, band, toast) => {
+    c.copy(cPit).lerp(cRib, clamp(rib * 0.95 + 0.04, 0, 1));
+    c.lerp(cBurn, clamp(toast, 0, 1) * 0.38 * (1 - rib * 0.55));
+    c.lerp(cBand, band * 0.85);
+    col.push(c.r, c.g, c.b);
+  };
+  // fond plat
+  for (let j = 0; j <= ND; j++) {
+    const t = j / ND, rr = (RB - 0.035) * t;
+    for (let i = 0; i < U; i++) {
+      const a = 2 * Math.PI * i / U, x = Math.cos(a) * rr, z = Math.sin(a) * rr;
+      const [rib, pit] = grid(x / cell + 0.5, z / cell + 0.5);
+      const d = (rib * 0.022 - pit * 0.008) * sstep(0.05, 0.2, t);
+      pos.push(x, BOT + 0.012 * sstep(0.8, 1, t) - d, z);
+      paint(rib, 0, 0.5 + noise(x * 2, z * 2, 3) * 0.6);
+    }
+  }
+  // parois évasées + bord ondulé qui s'ouvre
+  for (let j = 0; j <= V; j++) {
+    const v = j / V;
+    for (let i = 0; i < U; i++) {
+      const a = 2 * Math.PI * i / U, ca = Math.cos(a), sa = Math.sin(a);
+      const wave = 0.055 * Math.sin(6 * a + 0.4) + 0.025 * Math.sin(13 * a + 1.1) + 0.02 * noise(ca * 3, sa * 3, 1.3);
+      const y = BOT + 0.04 + v * (TOP + wave - BOT - 0.04);
+      const corner = 1 - sstep(0, 0.12, v);
+      let r = lerp(RB, R, Math.pow(v, 0.9)) - 0.035 * corner * corner;
+      r += sstep(0.86, 1, v) * (0.07 + 0.035 * Math.sin(6 * a + 0.4));
+      const [rib, pit] = grid(a / (2 * Math.PI) * 30 + 0.045 * noise(ca * 2.5, sa * 2.5, v * 9), (TOP - y) / cell + 0.045 * noise(ca * 2.5 + 7, sa * 2.5, v * 9 + 3));
+      let d = (rib * 0.03 * (0.85 + 0.3 * noise(ca * 9, sa * 9, v * 40)) - pit * 0.012) * sstep(0.06, 0.16, v);
+      const band = sstep(0.84, 0.88, v);
+      d = lerp(d, 0.03 + 0.012 * Math.sin(Math.PI * clamp((v - 0.84) / 0.16, 0, 1)), band);
+      const nx = ca * H, ny = -(R - RB), nz = sa * H, nl = Math.hypot(nx, ny, nz);
+      pos.push(ca * r + nx / nl * d, y + ny / nl * d, sa * r + nz / nl * d);
+      paint(rib, band, 0.5 + noise(ca * 1.6, sa * 1.6, v * 4) * 0.6 + (1 - v) * 0.1);
+    }
+  }
+  const rows = ND + 1 + V + 1;
+  for (let j = 0; j < rows - 1; j++) for (let i = 0; i < U; i++) {
+    const a = j * U + i, b = j * U + (i + 1) % U, c2 = (j + 1) * U + i, d = (j + 1) * U + (i + 1) % U;
+    idx.push(a, c2, b, b, c2, d);
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
+  g.setAttribute("color", new THREE.Float32BufferAttribute(col, 3));
+  g.setIndex(idx); g.computeVertexNormals();
+  return new THREE.Mesh(g, new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.78, metalness: 0, side: THREE.DoubleSide }));
+}
+
+/* ---- peau de glace : texture différente pour chaque parfum ---- */
+function rnd(seed) { let s = seed; return () => (s = (s * 16807) % 2147483647) / 2147483647; }
+function iceSkin(spec, seed) {
+  const R = rnd(seed), cv = document.createElement("canvas"); cv.width = 1024; cv.height = 512;
+  const x = cv.getContext("2d");
+  x.fillStyle = "#fff"; x.fillRect(0, 0, 1024, 512);
+  // marbrures douces (le mélange n'est jamais parfaitement homogène)
+  for (let k = 0; k < 120; k++) {
+    const px = R() * 1024, py = R() * 512, r = 30 + R() * 90, gr = x.createRadialGradient(px, py, 0, px, py, r);
+    gr.addColorStop(0, spec.marble); gr.addColorStop(1, "rgba(0,0,0,0)");
+    x.fillStyle = gr; x.fillRect(px - r, py - r, r * 2, r * 2);
+  }
+  // morceaux propres au parfum
+  spec.bits.forEach(b => {
+    for (let k = 0; k < b.n; k++) {
+      const px = R() * 1024, py = 30 + R() * 452, s = b.s[0] + Math.pow(R(), 2) * (b.s[1] - b.s[0]);
+      x.save(); x.translate(px, py); x.rotate(R() * Math.PI);
+      x.fillStyle = b.c.replace("A", (0.35 + R() * 0.5).toFixed(2));
+      x.beginPath();
+      if (b.shape === "shard") { x.moveTo(-s, -s * 0.4); x.lineTo(s * 1.2, -s * 0.2); x.lineTo(s * 0.3, s * 0.7); x.closePath(); }
+      else x.ellipse(0, 0, s * (b.long || 1.3), s, 0, 0, 7);
+      x.fill(); x.restore();
+    }
+  });
+  const t = new THREE.CanvasTexture(cv); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 8;
+  return t;
+}
+// grain de glace (relief fin, comme une glace qui vient d'être servie)
+function grainTex() {
+  const cv = document.createElement("canvas"); cv.width = cv.height = 512;
+  const x = cv.getContext("2d"), d = x.createImageData(512, 512);
+  for (let i = 0; i < 512 * 512; i++) {
+    const px = i % 512, py = (i / 512) | 0;
+    const v = 128 + 70 * noise(px / 9, py / 9, 1) + 40 * noise(px / 3, py / 3, 7) + 20 * (Math.random() - 0.5);
+    d.data[i * 4] = d.data[i * 4 + 1] = d.data[i * 4 + 2] = v; d.data[i * 4 + 3] = 255;
+  }
+  x.putImageData(d, 0, 0);
+  const t = new THREE.CanvasTexture(cv); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(3, 2);
+  return t;
+}
+const SKINS = F.map((f, i) => iceSkin(f.skin, 1234 + i * 977));
+const iceMat = new THREE.MeshPhysicalMaterial({ color: F[0].col, map: SKINS[0], bumpMap: grainTex(), bumpScale: 0.85, roughness: F[0].rough, specularIntensity: 0.55, sheen: 0.55, sheenRoughness: 0.85, sheenColor: new THREE.Color(0xffffff), clearcoat: F[0].cc, clearcoatRoughness: 0.35 });
+
+/* ---- boule (géométrie centrée, posée sur la crème) ---- */
+const SCOOP_Y = 1.68, LAYER_Y = 1.02; // la collerette de la boule se pose sur la crème
+function buildScoop() {
+  const g = new THREE.SphereGeometry(1, 180, 110);
+  const p = g.attributes.position, v = new THREE.Vector3();
+  const curl = new THREE.Vector3(0.55, 0.7, 0.45).normalize();
+  const curl2 = new THREE.Vector3(-0.5, 0.62, 0.6).normalize();
+  const side = new THREE.Vector3(1, 0, 0.6).normalize();
+  for (let i = 0; i < p.count; i++) {
+    v.fromBufferAttribute(p, i).normalize();
+    let r = 1;
+    const x = Math.acos(clamp(v.dot(curl), -1, 1)) - 0.62 + 0.06 * noise(v.x * 3, v.y * 3, v.z * 3);
+    const sd = sstep(-0.4, 0.3, v.dot(side));
+    r += (0.055 * sstep(-0.05, 0.05, -x) - 0.03 * Math.exp(-((x / 0.05) ** 2))) * sd;
+    const x2 = Math.acos(clamp(v.dot(curl2), -1, 1)) - 0.5;
+    r += (0.03 * sstep(-0.05, 0.05, -x2) - 0.02 * Math.exp(-((x2 / 0.045) ** 2))) * 0.8;
+    r += noise(v.x * 2, v.y * 2, v.z * 2) * 0.025 + noise(v.x * 7, v.y * 7, v.z * 7) * 0.008;
+    // bas de la boule légèrement écrasé sur la crème
+    const squash = v.y < -0.3 ? 1 - 0.18 * sstep(-0.3, -1, v.y) : 1;
+    p.setXYZ(i, v.x * r * 1.03 * (v.y < -0.3 ? 1 + 0.06 * sstep(-0.3, -0.8, v.y) : 1), v.y * r * 0.9 * squash, v.z * r);
+  }
+  g.computeVertexNormals();
+  const m = new THREE.Mesh(g, iceMat); m.position.y = SCOOP_Y; return m;
+}
+
+/* ---- crème qui déborde de la coupelle ---- */
+const DRIPS = [0.35, 1.9, 2.9, 4.4, 5.5];
+function buildLayer() {
+  const g = new THREE.SphereGeometry(1, 200, 80);
+  const p = g.attributes.position, v = new THREE.Vector3();
+  for (let i = 0; i < p.count; i++) {
+    v.fromBufferAttribute(p, i).normalize();
+    const th = Math.atan2(v.z, v.x), sxz = Math.max(1e-5, Math.hypot(v.x, v.z)), eq = 1 - Math.abs(v.y);
+    // bord en vagues irrégulières, plus large que la coupelle
+    const edge = 1.36 + 0.05 * Math.sin(5 * th + 1) + 0.04 * noise(Math.cos(th) * 2.2, Math.sin(th) * 2.2, 4);
+    let rad, y;
+    if (v.y >= 0) { rad = sxz * edge; y = v.y * 0.4 + 0.03 * noise(v.x * 3, v.y * 3, v.z * 3); }
+    else { rad = lerp(edge, 1.05, sstep(0, -0.6, v.y)) * Math.sqrt(sstep(-1, -0.7, v.y)); y = v.y * 0.75; }
+    // ce qui dépasse de la coupelle retombe par-dessus le bord
+    let drop = 0.1 + 0.05 * Math.sin(5 * th + 1);
+    DRIPS.forEach((d, k) => { let dd = Math.atan2(Math.sin(th - d), Math.cos(th - d)); drop += (0.16 + 0.08 * (k % 3)) * Math.exp(-((dd / 0.2) ** 2)); });
+    const out = sstep(1.2, 1.4, rad);
+    y -= drop * out * (v.y >= 0 ? 1 : 1.15);
+    rad += 0.03 * out;
+    p.setXYZ(i, v.x / sxz * rad, y, v.z / sxz * rad);
+  }
+  g.computeVertexNormals();
+  const m = new THREE.Mesh(g, iceMat); m.position.y = LAYER_Y; return m;
+}
+
+/* bourrelet de crème qui fond la boule dans la couche du bas */
+function buildCollar() {
+  const g = new THREE.TorusGeometry(0.86, 0.26, 40, 160);
+  const p = g.attributes.position, v = new THREE.Vector3();
+  for (let i = 0; i < p.count; i++) {
+    v.fromBufferAttribute(p, i);
+    const th = Math.atan2(v.y, v.x), n = noise(Math.cos(th) * 2.5, Math.sin(th) * 2.5, v.z * 3);
+    const r = Math.hypot(v.x, v.y), k = 1 + 0.06 * n + 0.04 * Math.sin(7 * th);
+    p.setXYZ(i, v.x / r * (r * k), v.y / r * (r * k), v.z * 0.62 * (1 + 0.15 * n));
+  }
+  g.computeVertexNormals();
+  const m = new THREE.Mesh(g, iceMat); m.rotation.x = -Math.PI / 2; m.position.y = 0.33; return m;
+}
+
+/* ================= mes modèles de glace (boule roulée, double boule, italienne…) ================= */
+const noise3 = noise, smooth = sstep, TAU = Math.PI * 2;
+function fbm(x, y, z, o = 3) { let a = 0, f = 1, w = 0.5; for (let i = 0; i < o; i++) { a += w * noise3(x * f, y * f, z * f); f *= 2.03; w *= 0.5; } return a; }
+const V3 = (x, y, z) => new THREE.Vector3(x, y, z).normalize();
+iceMat.vertexColors = true;                          // ombres peintes dans les creux
+const whiten = g => { g.setAttribute("color", new THREE.Float32BufferAttribute(new Float32Array(g.attributes.position.count * 3).fill(1), 3)); return g; };
+/* occlusion peinte dans les couleurs de sommet (creux et dessous plus sombres, teinte chaude) */
+function paintAO(geo, fn) {
+  const p = geo.attributes.position, col = new Float32Array(p.count * 3), n = new THREE.Vector3();
+  for (let i = 0; i < p.count; i++) {
+    const a = clamp(fn(i, p), 0.35, 1);
+    col[i * 3] = a; col[i * 3 + 1] = a * (0.94 + 0.06 * a); col[i * 3 + 2] = a * (0.88 + 0.12 * a);
+  }
+  geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
+  return geo;
+}
+
+/* ---- 2. Boule : surface arrachée par la cuillère, collerette frangée ---- */
+function scoopGeo(o = {}) {
+  const seed = o.seed || 0, frill = o.frill ?? 1, grain = o.grain || 0, foldK = o.fold ?? 1;
+  const geo = new THREE.SphereGeometry(1, 220, 160);
+  const p = geo.attributes.position, n = new THREE.Vector3(), ao = new Float32Array(p.count);
+  const folds = [{ a: V3(0.55, 0.72, 0.42), c: 0.3 }, { a: V3(-0.62, 0.55, -0.3), c: 0.47 }];
+  const roll = V3(0.25, 0.3, 0.92);
+  for (let i = 0; i < p.count; i++) {
+    n.fromBufferAttribute(p, i).normalize();
+    const th = Math.atan2(n.z, n.x), ct = Math.cos(th), st = Math.sin(th);
+    let r = 1, shade = 1;
+    for (const f of folds) {
+      const d = n.dot(f.a) - f.c + 0.065 * fbm(n.x * 2.2 + 9 + seed, n.y * 2.2, n.z * 2.2, 3);
+      r += 0.05 * foldK * smooth(-0.012, 0.012, d) * (0.7 + 0.5 * noise3(n.x * 3, n.y * 3 + seed, n.z * 3 + 4));
+      const g = Math.exp(-Math.pow((d + 0.02) / 0.018, 2));
+      r -= 0.008 * foldK * g; shade -= 0.28 * foldK * g;
+    }
+    r += 0.0055 * Math.sin(n.dot(roll) * 32 + 2.6 * fbm(n.x * 1.7 + seed, n.y * 1.7, n.z * 1.7, 2)) * smooth(-0.35, 0.3, n.y);
+    const lipY = -0.4 + 0.07 * noise3(ct * 1.8, st * 1.8, 5 + seed);
+    const lip = Math.exp(-Math.pow((n.y - lipY) / 0.075, 2));
+    const tear = clamp(0.55 + 0.75 * noise3(ct * 4.5, st * 4.5, n.y * 4 + seed) + 0.3 * noise3(ct * 17, st * 17, 2 + seed), 0.05, 1.3);
+    r += 0.085 * frill * lip * tear;
+    r *= 1 - 0.24 * smooth(lipY - 0.04, -0.95, n.y);
+    r += 0.006 * fbm(n.x * 5, n.y * 5 + seed, n.z * 5, 2);
+    if (grain) r += grain * (fbm(n.x * 11 + seed, n.y * 11, n.z * 11, 3) + 0.4 * Math.abs(noise3(n.x * 26, n.y * 26, n.z * 26)));
+    shade -= 0.5 * smooth(lipY + 0.02, lipY - 0.3, n.y);          // dessous de la collerette
+    shade -= 0.12 * smooth(0.2, -0.4, n.y);
+    ao[i] = shade;
+    p.setXYZ(i, n.x * r, n.y * r * 0.88, n.z * r);
+  }
+  geo.computeVertexNormals();
+  return paintAO(geo, i => ao[i]);
+}
+
+/* ---- 3. Couche du bas : tassée dans la coupelle ---- */
+
+/* ---- Garnitures ---- */
+function leafGeo(len, wid, serr, curl, veinK = 1) {
+  const g = new THREE.PlaneGeometry(1, 2, 32, 12), p = g.attributes.position, col = [];
+  for (let i = 0; i < p.count; i++) {
+    const u = p.getX(i) + 0.5, v = p.getY(i);
+    const teeth = 1 + serr * (Math.abs(Math.sin(u * Math.PI * 12)) - 0.5) * smooth(0.12, 0.3, u);
+    const hw = wid * Math.pow(Math.sin(Math.PI * Math.pow(u, 0.72)), 0.85) * teeth;
+    const x = u * len, y = v * hw;
+    const z = -curl * x * x + 0.32 * Math.abs(y) + 0.02 * Math.sin(u * 20) * Math.abs(v);
+    p.setXYZ(i, x, y, z);
+    const mid = Math.exp(-Math.pow(v * 9, 2));
+    const side = Math.exp(-Math.pow(((Math.abs(v) + u * 1.3) * 6) % 1.6 - 0.8, 2) * 40) * smooth(0.1, 0.4, Math.abs(v));
+    const c = 0.72 + 0.35 * mid * veinK + 0.12 * side * veinK - 0.12 * Math.abs(v);
+    col.push(c, c, c);
+  }
+  g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
+  g.computeVertexNormals();
+  return g;
+}
+const Z = new THREE.Vector3(0, 0, 1);
+function surfacePoint(dir, sx = 1, sy = 0.88, lift = 0) {
+  const d = dir.clone().normalize();
+  return new THREE.Vector3(d.x * sx, d.y * sy, d.z * sx).multiplyScalar(1 + lift);
+}
+function placeOn(obj, dir, spin, tilt, sx, sy, lift) {
+  obj.position.copy(surfacePoint(dir, sx, sy, lift));
+  obj.quaternion.setFromUnitVectors(Z, dir.clone().normalize());
+  obj.rotateZ(spin); obj.rotateY(tilt);
+  return obj;
+}
+const mintMat = new THREE.MeshStandardMaterial({ color: '#86cf63', vertexColors: true, roughness: 0.55, side: THREE.DoubleSide });
+const basilMat = new THREE.MeshPhysicalMaterial({ color: '#62b84a', vertexColors: true, roughness: 0.32, clearcoat: 0.4, side: THREE.DoubleSide });
+const calyxMat = new THREE.MeshStandardMaterial({ color: '#3c6a24', vertexColors: true, roughness: 0.6, side: THREE.DoubleSide });
+
+function raspberries(group, spots) {
+  const pts = [];
+  for (let i = 0; i < 46; i++) {               // drupéoles réparties en spirale de Fibonacci
+    const y = 1 - (i + 0.5) / 46 * 1.7, r = Math.sqrt(Math.max(0, 1 - y * y)), a = i * 2.39996;
+    pts.push(new THREE.Vector3(Math.cos(a) * r, y, Math.sin(a) * r));
+  }
+  const mesh = new THREE.InstancedMesh(new THREE.SphereGeometry(1, 14, 10),
+    new THREE.MeshPhysicalMaterial({ color: '#b0153b', roughness: 0.3, clearcoat: 0.5, clearcoatRoughness: 0.25, sheen: 0.4, sheenColor: new THREE.Color('#ff8aa0') }),
+    pts.length * spots.length);
+  const m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), s = new THREE.Vector3(), c = new THREE.Color();
+  let k = 0;
+  for (const sp of spots) {
+    const base = surfacePoint(sp.dir, sp.sx, sp.sy, 0.02), qa = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), sp.dir.clone().normalize());
+    for (const pt of pts) {
+      const lp = new THREE.Vector3(pt.x * 0.16, pt.y * 0.19 + 0.1, pt.z * 0.16).applyQuaternion(qa).add(base);
+      const sc = 0.058 + 0.008 * hash(k, 1, 2);
+      m4.compose(lp, q.identity(), s.set(sc, sc, sc)); mesh.setMatrixAt(k, m4);
+      c.set('#b0153b').offsetHSL(0.01 * (hash(k, 3, 4) - 0.5), 0, 0.08 * (hash(k, 5, 6) - 0.5)); mesh.setColorAt(k, c);
+      k++;
+    }
+  }
+  group.add(mesh);
+}
+
+/* tracé de la glace à l'italienne : une couronne complète à la base, puis la spirale qui monte */
+const SW_TURNS = 3.4, SW_BASE = 1 / 3.4;
+function swirlPath(t) {
+  const u = Math.max(0, t - SW_BASE) / (1 - SW_BASE), tip = smooth(0.86, 1, u);
+  const R = (0.82 * Math.pow(1 - u, 0.9) + 0.03) * smooth(0, 0.09, t);      // départ caché au centre
+  const rc = 0.3 * (1 - 0.48 * u) * Math.sqrt(smooth(0, 0.05, t)) * Math.sqrt(Math.max(0, 1 - tip)) + 0.002;
+  const y = -0.42 + u * 1.3 + 0.22 * tip;
+  return { a: t * SW_TURNS * TAU + 0.4, R, rc, y, u };
+}
+function swirlGeo() {
+  const N = 520, M = 36, pos = [], uv = [], ao = [], idx = [];
+  for (let i = 0; i <= N; i++) {
+    const t = i / N, P = swirlPath(t), ca = Math.cos(P.a), sa = Math.sin(P.a);
+    for (let j = 0; j <= M; j++) {
+      const ph = j / M * TAU, cp = Math.cos(ph), sp = Math.sin(ph);
+      const ridge = 1 + 0.085 * Math.cos(8 * ph + t * 2.5) + 0.02 * noise3(t * 30, ph * 2, 1);
+      const o = P.rc * ridge;
+      pos.push(ca * (P.R + cp * o), P.y + sp * o * 0.9, sa * (P.R + cp * o));
+      uv.push(t * 12, j / M);
+      ao.push(1 - 0.42 * smooth(0.1, -0.9, sp) - 0.18 * smooth(0.2, -0.9, cp) + 0.06 * Math.cos(8 * ph + t * 2.5));
+    }
+  }
+  for (let i = 0; i < N; i++) for (let j = 0; j < M; j++) {
+    const a = i * (M + 1) + j, b = a + 1, c = a + M + 1, d = c + 1;
+    idx.push(a, b, c, b, d, c);
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+  g.setIndex(idx); g.computeVertexNormals();
+  return paintAO(g, i => ao[i]);
+}
+/* cœur plein sous la spirale : on ne voit jamais à travers entre deux tours */
+function swirlCore() {
+  const prof = [[0.001, -0.56], [0.78, -0.56], [0.8, -0.42], [0.66, -0.06], [0.5, 0.3], [0.33, 0.62], [0.16, 0.86], [0.001, 0.96]]
+    .map(([x, y]) => new THREE.Vector2(x, y));
+  const g = new THREE.LatheGeometry(new THREE.SplineCurve(prof).getPoints(60), 72);
+  return paintAO(g, () => 0.6);
+}
+
+function limeWheel() {
+  const c = document.createElement('canvas'); c.width = c.height = 512;
+  const x = c.getContext('2d'), C = 256;
+  x.fillStyle = '#2f6b1f'; x.beginPath(); x.arc(C, C, 256, 0, TAU); x.fill();
+  x.fillStyle = '#6fa83a'; x.beginPath(); x.arc(C, C, 238, 0, TAU); x.fill();
+  x.fillStyle = '#f2f1d6'; x.beginPath(); x.arc(C, C, 224, 0, TAU); x.fill();
+  for (let s = 0; s < 10; s++) {
+    const a0 = s / 10 * TAU + 0.03, a1 = (s + 1) / 10 * TAU - 0.03;
+    x.fillStyle = '#c6dd6a'; x.beginPath(); x.moveTo(C + Math.cos((a0 + a1) / 2) * 22, C + Math.sin((a0 + a1) / 2) * 22);
+    x.arc(C, C, 208, a0, a1); x.closePath(); x.fill();
+    for (let k = 0; k < 70; k++) {
+      const a = lerp(a0 + 0.04, a1 - 0.04, Math.random()), r = 40 + Math.random() * 160;
+      x.fillStyle = `rgba(${Math.random() > .5 ? '240,250,190' : '150,190,60'},0.5)`;
+      x.beginPath(); x.ellipse(C + Math.cos(a) * r, C + Math.sin(a) * r, 7, 2.5, a, 0, TAU); x.fill();
+    }
+  }
+  const tex = new THREE.CanvasTexture(c); tex.colorSpace = THREE.SRGBColorSpace;
+  const cap = new THREE.MeshPhysicalMaterial({ map: tex, roughness: 0.22, clearcoat: 0.6, clearcoatRoughness: 0.2 });
+  const rind = new THREE.MeshStandardMaterial({ color: '#2f6b1f', roughness: 0.45 });
+  const m = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.4, 0.07, 64), [rind, cap, cap]);
+  return m;
+}
+
+function zest(color) {
+  const pts = []; for (let i = 0; i <= 40; i++) { const t = i / 40; pts.push(new THREE.Vector3(Math.cos(t * 9) * 0.06, t * 0.3, Math.sin(t * 9) * 0.06)); }
+  return new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 60, 0.018, 8), new THREE.MeshStandardMaterial({ color, roughness: 0.5 }));
+}
+
+function cherryTomato() {
+  const g = new THREE.Group();
+  const s = new THREE.Mesh(new THREE.SphereGeometry(0.22, 40, 30), new THREE.MeshPhysicalMaterial({ color: '#d4261c', roughness: 0.16, clearcoat: 0.8, clearcoatRoughness: 0.1 }));
+  s.scale.y = 0.86; g.add(s);
+  for (let k = 0; k < 5; k++) {
+    const l = new THREE.Mesh(leafGeo(0.16, 0.035, 0, 1.2, 0.4), calyxMat);
+    l.position.y = 0.185; l.rotation.set(0, k / 5 * TAU, 0); l.rotateX(-Math.PI / 2 + 0.3); g.add(l);
+  }
+  const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.016, 0.09, 8), calyxMat); stem.position.y = 0.23; stem.rotation.z = 0.3; g.add(stem);
+  return g;
+}
+
+/* ---- Six modèles de glace, un par parfum ---- */
+const scoop = new THREE.Group(); scoop.name = 'scoop'; scoop.position.y = SCOOP_Y;
+function variant(build) { const g = new THREE.Group(); build(g); scoop.add(g); return g; }
+const VARIANTS = [
+  // 01 Carotte : la boule classique
+  variant(g => { g.add(new THREE.Mesh(scoopGeo(), iceMat)); }),
+  // 02 Betterave + framboise : deux boules et des framboises
+  variant(g => {
+    const a = new THREE.Mesh(scoopGeo({ seed: 3.1 }), iceMat); a.scale.setScalar(0.88); a.position.y = -0.08; a.rotation.y = 1.4; g.add(a);
+    const b = new THREE.Mesh(scoopGeo({ seed: 7.7, frill: 1.2 }), iceMat); b.scale.setScalar(0.64); b.position.set(0.05, 0.84, -0.02); b.rotation.set(0.1, -0.8, 0.06); g.add(b);
+    const top = new THREE.Group(); top.position.copy(b.position); top.scale.setScalar(0.64); g.add(top);
+    raspberries(top, [{ dir: V3(0.15, 1, 0.35), sx: 1, sy: 0.88 }, { dir: V3(-0.55, 0.7, 0.3), sx: 1, sy: 0.88 }]);
+    raspberries(g, [{ dir: V3(0.75, 0.25, 0.6), sx: 0.88, sy: 0.77 }]);
+  }),
+  // 03 Petit pois + menthe : feuilles de menthe et petits pois
+  variant(g => {
+    const s = new THREE.Mesh(scoopGeo({ seed: 11.3 }), iceMat); s.rotation.y = 2.2; g.add(s);
+    [[V3(0.05, 1, 0.55), 1.9, -0.75], [V3(0.3, 1, 0.3), 0.6, -0.85], [V3(-0.25, 1, 0.35), 2.9, -0.7]].forEach(([d, sp, t]) =>
+      g.add(placeOn(new THREE.Mesh(leafGeo(0.7, 0.26, 0.32, 0.35), mintMat), d, sp, t, 1, 0.88, -0.01)));
+    const peaMat = new THREE.MeshPhysicalMaterial({ color: '#79a83a', roughness: 0.35, clearcoat: 0.3 });
+    [V3(0.6, 0.35, 0.72), V3(0.72, 0.15, 0.62), V3(-0.4, 0.5, 0.78)].forEach(d => {
+      const pea = new THREE.Mesh(new THREE.SphereGeometry(0.075, 24, 18), peaMat); pea.position.copy(surfacePoint(d, 1, 0.88, 0.035)); g.add(pea);
+    });
+  }),
+  // 04 Patate douce + cannelle : glace à l'italienne et bâton de cannelle
+  variant(g => {
+    g.add(new THREE.Mesh(swirlGeo(), iceMat), new THREE.Mesh(swirlCore(), iceMat));
+    const bark = new THREE.MeshStandardMaterial({ color: '#7a3a18', roughness: 0.85, side: THREE.DoubleSide });
+    const stick = new THREE.Group();
+    const c1 = new THREE.Mesh(new THREE.CylinderGeometry(0.075, 0.075, 1.15, 24, 1, true, 0, 5.2), bark);
+    const c2 = new THREE.Mesh(new THREE.CylinderGeometry(0.048, 0.048, 1.15, 20, 1, true, 2, 4.6), bark);
+    stick.add(c1, c2); stick.position.set(0.28, 0.6, 0.42); stick.rotation.set(0.5, 0, -0.6); g.add(stick);
+    const dust = new THREE.InstancedMesh(new THREE.SphereGeometry(1, 6, 4), new THREE.MeshStandardMaterial({ color: '#6b3417', roughness: 0.9 }), 260);
+    const m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), sc = new THREE.Vector3();
+    for (let k = 0; k < 260; k++) {
+      const P = swirlPath(0.2 + 0.72 * hash(k, 9, 1)), ph = lerp(0.35, 2.4, hash(k, 2, 7));
+      const p = new THREE.Vector3(Math.cos(P.a) * (P.R + Math.cos(ph) * P.rc), P.y + Math.sin(ph) * P.rc * 0.9 + 0.005, Math.sin(P.a) * (P.R + Math.cos(ph) * P.rc));
+      const s = 0.008 + 0.01 * hash(k, 4, 4);
+      m4.compose(p, q, sc.set(s, s * 0.5, s)); dust.setMatrixAt(k, m4);
+    }
+    g.add(dust);
+  }),
+  // 05 Avocat + citron vert : rondelle de citron vert et zestes
+  variant(g => {
+    const s = new THREE.Mesh(scoopGeo({ seed: 5.2, frill: 0.8 }), iceMat); s.rotation.y = -1.1; g.add(s);
+    const w = limeWheel(); w.position.set(0.12, 0.78, 0.18); w.rotation.set(Math.PI / 2 - 0.25, 0, 0.35); g.add(w);
+    const z1 = zest('#4f9a2c'); z1.position.set(-0.35, 0.72, 0.42); z1.rotation.set(0.6, 0, 0.8); g.add(z1);
+  }),
+  // 06 Sorbet tomate + basilic : sorbet granuleux, basilic et tomate cerise
+  variant(g => {
+    const s = new THREE.Mesh(scoopGeo({ seed: 13.9, frill: 0.55, grain: 0.012, fold: 0.6 }), iceMat); s.rotation.y = 0.6; g.add(s);
+    [[V3(-0.2, 1, 0.45), 2.4, -0.8], [V3(0.0, 1, 0.1), 0.9, -0.9]].forEach(([d, sp, t]) =>
+      g.add(placeOn(new THREE.Mesh(leafGeo(0.8, 0.34, 0, 0.3, 0.8), basilMat), d, sp, t, 1, 0.88, -0.01)));
+    const tom = cherryTomato(); tom.position.copy(surfacePoint(V3(0.42, 0.82, 0.38), 1, 0.88, 0.1)); tom.rotation.set(0.3, 0.4, -0.25); g.add(tom);
+  })
+];
+
+const cone = buildCone(), layer = buildLayer();
+whiten(layer.geometry);
+model.add(cone, layer, scoop);
+model.position.y = -1.15;
+
+/* ================= garnitures, une par parfum ================= */
+const std = (c, r = 0.5, extra = {}) => new THREE.MeshStandardMaterial({ color: c, roughness: r, ...extra });
+function onTop(obj, ang, tilt, lift = 0) {          // pose un objet sur la boule
+  const n = new THREE.Vector3(Math.sin(tilt) * Math.cos(ang), Math.cos(tilt), Math.sin(tilt) * Math.sin(ang));
+  obj.position.copy(n).multiplyScalar(0.93 + lift); obj.position.y *= 0.9;
+  obj.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), n);
+  return obj;
+}
+/* rondelle de carotte confite : face peinte (cœur clair, anneau, stries), bord irrégulier, à peine brillante */
+function carrotFace() {
+  const c = document.createElement("canvas"); c.width = c.height = 256;
+  const x = c.getContext("2d"), C = 128;
+  let g = x.createRadialGradient(C, C, 0, C, C, 128);
+  g.addColorStop(0, "#f7b25c"); g.addColorStop(0.42, "#f29a3e"); g.addColorStop(0.5, "#e07a22");
+  g.addColorStop(0.56, "#f08a30"); g.addColorStop(0.9, "#e8711c"); g.addColorStop(1, "#c9561a");
+  x.fillStyle = g; x.fillRect(0, 0, 256, 256);
+  for (let k = 0; k < 90; k++) {                     // stries qui partent du cœur
+    const a = Math.random() * Math.PI * 2, r0 = 10 + Math.random() * 30, r1 = 70 + Math.random() * 50;
+    x.strokeStyle = `rgba(${Math.random() > .5 ? "255,200,130" : "200,90,20"},${0.12 + Math.random() * 0.18})`;
+    x.lineWidth = 0.8 + Math.random() * 1.6;
+    x.beginPath(); x.moveTo(C + Math.cos(a) * r0, C + Math.sin(a) * r0); x.lineTo(C + Math.cos(a) * r1, C + Math.sin(a) * r1); x.stroke();
+  }
+  for (let k = 0; k < 400; k++) {                    // sucre cristallisé
+    x.fillStyle = `rgba(255,240,215,${Math.random() * 0.35})`;
+    x.fillRect(Math.random() * 256, Math.random() * 256, 1 + Math.random() * 2, 1 + Math.random() * 2);
+  }
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
+}
+function carrotCoins(g) {
+  const face = carrotFace();
+  const cap = new THREE.MeshPhysicalMaterial({ map: face, roughness: 0.48, clearcoat: 0.3, clearcoatRoughness: 0.45, sheen: 0.5, sheenColor: new THREE.Color("#ffd0a0"), sheenRoughness: 0.6 });
+  const skin = new THREE.MeshStandardMaterial({ color: "#c95a1c", roughness: 0.7 });
+  [[0.6, 0.38, 0.17], [2.2, 0.5, 0.15], [5.4, 0.45, 0.16]].forEach(([a, t, r], k) => {
+    const geo = new THREE.CylinderGeometry(r, r * 0.97, 0.035, 48, 1);
+    const p = geo.attributes.position;
+    for (let i = 0; i < p.count; i++) {               // bord pas parfaitement rond, tranche un peu bombée
+      const px = p.getX(i), pz = p.getZ(i), ang = Math.atan2(pz, px), d = Math.hypot(px, pz);
+      const wob = 1 + 0.07 * noise(Math.cos(ang) * 1.8 + k * 5, Math.sin(ang) * 1.8, k) + 0.02 * Math.sin(ang * 7 + k);
+      p.setX(i, px * wob); p.setZ(i, pz * wob);
+      if (p.getY(i) > 0) p.setY(i, p.getY(i) + 0.012 * (1 - (d / r) ** 2));
+    }
+    geo.computeVertexNormals();
+    const coin = new THREE.Mesh(geo, [skin, cap, cap]);
+    coin.rotation.set(0.55 + 0.15 * k, k * 1.7, 0.2);   // posée en biais, à moitié enfoncée
+    const holder = new THREE.Group(); holder.add(coin); g.add(onTop(holder, a, t, 0.1));
+  });
+  // allumettes de gingembre confit, irrégulières et translucides
+  const ginger = new THREE.MeshPhysicalMaterial({ color: "#e8cf86", roughness: 0.4, clearcoat: 0.35, transmission: 0.15, thickness: 0.05 });
+  [[1.3, 0.5], [3.4, 0.55], [4.3, 0.42]].forEach(([a, t], k) => {
+    const geo = new THREE.BoxGeometry(0.2, 0.032, 0.03, 8, 1, 1), p = geo.attributes.position;
+    for (let i = 0; i < p.count; i++) { const u = p.getX(i); p.setY(i, p.getY(i) * (0.8 + 0.4 * noise(u * 9, k, 1)) + 0.012 * Math.sin(u * 14 + k)); }
+    geo.computeVertexNormals();
+    const s = new THREE.Mesh(geo, ginger); s.rotation.y = k * 1.3; g.add(onTop(s, a, t, 0.085));
+  });
+}
+carrotCoins(VARIANTS[0]);
+VARIANTS.slice(1).forEach(v => { v.rotation.y = -2.2; }); // garnitures face à l'écran dans la section parfums (ry = 2.2)
+const TOPS = ORDER.map(i => VARIANTS[i]);   // chaque modèle apparaît avec un petit rebond, comme les garnitures
+TOPS.forEach(t => { t.visible = true; t.scale.setScalar(0.001); });
+
+/* ---- gouttes qui coulent (sorbet tomate, quand il fond) ---- */
+const meltDrips = [0.9, 3.6].map(a => {
+  const d = new THREE.Mesh(whiten(new THREE.CapsuleGeometry(0.07, 0.3, 6, 16)), iceMat);
+  d.position.set(Math.cos(a) * 1.36, -0.3, Math.sin(a) * 1.43); d.scale.setScalar(0.001); layer.add(d); return d;
+});
+
+/* ================= schéma 3D : axe, graduations, anneaux ================= */
+const lineMat = new THREE.LineBasicMaterial({ color: 0x14304d, transparent: true, opacity: 0 });
+function circle(r, y, seg = 128) {
+  const pts = []; for (let i = 0; i <= seg; i++) { const a = i / seg * Math.PI * 2; pts.push(new THREE.Vector3(Math.cos(a) * r, y, Math.sin(a) * r)); }
+  return new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), lineMat);
+}
+const axisPts = [new THREE.Vector3(0, -0.85, 0), new THREE.Vector3(0, 3.2, 0)];
+for (let y = -0.75; y <= 3.01; y += 0.25) { const l = Math.abs(y % 1) < 0.01 ? 0.16 : 0.07; axisPts.push(new THREE.Vector3(-l, y, 0), new THREE.Vector3(l, y, 0)); }
+model.add(new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(axisPts), lineMat));
+scoop.add(circle(1.18, 0)); layer.add(circle(1.62, 0)); cone.add(circle(0.95, -0.6));
+
+/* ================= repères accrochés à la glace ================= */
+const PARTS = {
+  scoop: { obj: scoop, c: new THREE.Vector3(0, 0, 0), r: 1.03 },
+  layer: { obj: layer, c: new THREE.Vector3(0, -0.12, 0), r: 1.48 },
+  cone:  { obj: cone,  c: new THREE.Vector3(0, 0.2, 0), r: 1.06 }
+};
+const CO = [
+  { g: "hero", part: "scoop", side: 1, ang: -0.85, ex: 34, ey: -46, dx: 40, i: "01", t: "Spoon fold", p: "70 g rolled by hand." },
+  { g: "hero", part: "layer", side: -1, ang: -0.2, ex: -30, ey: 30, dx: 70, i: "02", t: "Melting layer", p: "It spills over the cup." },
+  { g: "hero", part: "cone", side: -1, ang: 0.2, ex: -30, ey: 40, dx: 70, i: "03", t: "Waffle cup", p: "Flat base, wavy rim." },
+  { g: "anat", part: "scoop", side: -1, ang: 0, ex: -40, ey: 0, dx: 150, i: "01", t: "The scoop", p: "70 g of vegetable and fruit, rolled with a spoon. The fold on the side is the maker's hand.", big: 1 },
+  { g: "anat", part: "layer", side: 1, ang: 0, ex: 40, ey: 0, dx: 150, i: "02", t: "The melting layer", p: "The same ice cream, packed into the cup. It spills over a little, on purpose.", big: 1 },
+  { g: "anat", part: "cone", side: -1, ang: 0, ex: -40, ey: 30, dx: 150, i: "03", t: "The waffle cup", p: "Baked every morning. Flat base so it stands up, wavy rim.", big: 1 }
+];
+const svgNS = "http://www.w3.org/2000/svg";
+const linesSvg = el("lines"), coBox = el("callouts");
+CO.forEach(c => {
+  c.path = document.createElementNS(svgNS, "path"); linesSvg.appendChild(c.path);
+  c.ring = document.createElementNS(svgNS, "circle"); c.ring.setAttribute("r", 7); c.ring.setAttribute("class", "ring"); linesSvg.appendChild(c.ring);
+  c.dot = document.createElementNS(svgNS, "circle"); c.dot.setAttribute("r", 2.5); c.dot.setAttribute("class", "dot"); linesSvg.appendChild(c.dot);
+  c.el = document.createElement("div");
+  c.el.className = "co" + (c.side < 0 ? " l" : "") + (c.big ? " big" : "");
+  c.el.innerHTML = `<div class="i">${c.i}</div><h4>${c.t}</h4><p>${c.p}</p>`;
+  coBox.appendChild(c.el);
+  c.w = 0;
+});
+const GROUPS = { hero: el("top"), anat: el("anatomie") };
+function vis(e) { const r = e.getBoundingClientRect(); return clamp((Math.min(r.bottom, innerHeight) - Math.max(r.top, 0)) / innerHeight, 0, 1); }
+const _v = new THREE.Vector3(), _w = new THREE.Vector3();
+function toScreen(v) { v.project(camera); return [(v.x + 1) / 2 * W, (1 - v.y) / 2 * H]; }
+let gW = { hero: 0, anat: 0 };
+function updateCallouts(dt) {
+  const tg = { hero: sstep(0.55, 0.92, vis(GROUPS.hero)) * (window.__loaded ? 1 : 0), anat: sstep(0.6, 0.95, vis(GROUPS.anat)) };
+  for (const k in gW) gW[k] += (tg[k] - gW[k]) * damp(0.12, dt);
+  lineMat.opacity = 0.28 * Math.max(gW.hero, gW.anat);
+  wrap.updateMatrixWorld(true);
+  CO.forEach(c => {
+    const w = gW[c.g] * (W < 900 ? 0 : 1);
+    if (w < 0.01) { c.el.style.opacity = 0; c.path.setAttribute("d", ""); c.dot.setAttribute("r", 0); c.ring.setAttribute("r", 0); return; }
+    const P = PARTS[c.part];
+    _v.copy(P.c); P.obj.localToWorld(_v);
+    _w.copy(_v); _w.x += P.r * wrap.scale.x;
+    const [cx, cy] = toScreen(_v), [rx] = toScreen(_w);
+    const rad = Math.abs(rx - cx) * 0.94;
+    const ax = cx + c.side * Math.cos(c.ang) * rad, ay = cy + Math.sin(c.ang) * rad;
+    const bx = ax + c.ex, by = ay + c.ey, ex = bx + c.side * c.dx;
+    const len = Math.hypot(c.ex, c.ey) + c.dx;
+    c.path.setAttribute("d", `M${ax.toFixed(1)},${ay.toFixed(1)} L${bx.toFixed(1)},${by.toFixed(1)} L${ex.toFixed(1)},${by.toFixed(1)}`);
+    c.path.style.strokeDasharray = len; c.path.style.strokeDashoffset = (len * (1 - w)).toFixed(1);
+    c.dot.setAttribute("cx", ax); c.dot.setAttribute("cy", ay); c.dot.setAttribute("r", 2.5 * w);
+    c.ring.setAttribute("cx", ax); c.ring.setAttribute("cy", ay); c.ring.setAttribute("r", 7 * w);
+    const lw = c.big ? 260 : 190;
+    const lx = c.side > 0 ? ex + 10 : ex - 10 - lw;
+    const ly = by - 10;
+    c.el.style.opacity = sstep(0.4, 1, w).toFixed(3);
+    c.el.style.transform = `translate(${lx.toFixed(1)}px, ${(ly + (1 - w) * 10).toFixed(1)}px)`;
+  });
+}
+
+/* ================= défilement doux ================= */
+let sTarget = scrollY, sCur = scrollY, wheeling = false;
+const maxScroll = () => document.documentElement.scrollHeight - innerHeight;
+if (!reduce && matchMedia("(pointer: fine)").matches) {
+  addEventListener("wheel", e => {
+    if (e.ctrlKey || e.target.closest("#carnet")) return; e.preventDefault();
+    if (!wheeling) sCur = sTarget = scrollY;
+    const d = e.deltaMode === 1 ? e.deltaY * 40 : e.deltaMode === 2 ? e.deltaY * innerHeight : e.deltaY;
+    sTarget = clamp(sTarget + d, 0, maxScroll()); wheeling = true;
+  }, { passive: false });
+  document.querySelectorAll('a[href^="#"]').forEach(a => a.addEventListener("click", e => {
+    const t = document.querySelector(a.getAttribute("href")); if (!t) return;
+    e.preventDefault(); sCur = scrollY;
+    sTarget = clamp(t.getBoundingClientRect().top + scrollY, 0, maxScroll()); wheeling = true;
+  }));
+  addEventListener("keydown", () => { wheeling = false; });
+  addEventListener("pointerdown", () => { wheeling = false; });
+}
+
+/* ================= chorégraphie au défilement ================= */
+const KF = [...document.querySelectorAll("[data-kf]")].map(e => ({ e, s: JSON.parse(e.dataset.kf) }));
+const keys = ["x", "y", "s", "rx", "ry", "rz", "ex"];
+function anchors() { return KF.map(k => { const r = k.e.getBoundingClientRect(); return r.top + scrollY + Math.min(r.height, innerHeight) / 2 - innerHeight / 2; }); }
+function targetState(sy) {
+  const A = anchors();
+  if (sy <= A[0]) return { ...KF[0].s };
+  for (let i = 0; i < A.length - 1; i++) {
+    if (sy <= A[i + 1]) {
+      const t = ease(clamp((sy - A[i]) / Math.max(1, A[i + 1] - A[i]), 0, 1));
+      const o = {}; keys.forEach(k => o[k] = lerp(KF[i].s[k], KF[i + 1].s[k], t)); return o;
+    }
+  }
+  return { ...KF[KF.length - 1].s };
+}
+
+/* ================= parfums : textes ================= */
+let curF = -1, textToken = 0, kcalShown = F[0].n.kcal;
+function countUp(node, from, to) {
+  const t0 = performance.now();
+  const step = now => { const k = clamp((now - t0) / 700, 0, 1); node.textContent = Math.round(from + (to - from) * (1 - Math.pow(1 - k, 3))); if (k < 1) requestAnimationFrame(step); };
+  requestAnimationFrame(step);
+}
+function renderText(i) {
+  const f = F[i], token = ++textToken, first = curF === -1;
+  const parts = [el("name"), el("kind"), el("body"), el("facts")];
+  parts.forEach((p, k) => { p.style.transitionDelay = (k * 30) + "ms"; p.classList.add("out"); });
+  setTimeout(() => {
+    if (token !== textToken) return;
+    el("idx").textContent = String(i + 1).padStart(2, "0");
+    el("name").innerHTML = `${f.name}<small>+ ${f.with}</small>`;
+    el("kind").textContent = `${f.kind} · PLU ${f.plu}`;
+    el("body").textContent = f.text;
+    el("facts").innerHTML = `
+      <div class="kcal"><b id="kc">${kcalShown}</b><span class="label">kcal<br>per 100 g</span></div>
+      <dl>${ROWS.map(([k, label]) => `<div><dt>${label}</dt><dd>${fmt(f.n[k])}</dd></div>`).join("")}</dl>
+      <p class="plus">${f.plus}</p>`;
+    parts.forEach(p => { p.classList.remove("out"); p.classList.add("pre"); });
+    void canvas.offsetWidth;
+    parts.forEach((p, k) => { p.style.transitionDelay = (k * 70) + "ms"; p.classList.remove("pre"); });
+    countUp(el("kc"), kcalShown, f.n.kcal); kcalShown = f.n.kcal;
+  }, first ? 0 : 240);
+}
+const COLS = F.map(f => new THREE.Color(f.col));
+const track = el("parfums");
+function flavorPos() {
+  const r = track.getBoundingClientRect();
+  return clamp(-r.top / (track.offsetHeight - innerHeight), 0, 0.9999) * F.length;
+}
+track.style.height = (F.length * 110 + 100) + "vh";
+
+/* ================= taille / redimensionnement ================= */
+let W = 0, H = 0, visH = 1, visW = 1;
+function resize() {
+  W = innerWidth; H = innerHeight;
+  renderer.setSize(W, H, false);
+  camera.aspect = W / H; camera.updateProjectionMatrix();
+  visH = 2 * camera.position.z * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
+  visW = visH * camera.aspect;
+}
+addEventListener("resize", resize); resize();
+
+/* ================= souris : légère parallaxe ================= */
+let mx = 0, my = 0, mxs = 0, mys = 0;
+addEventListener("pointermove", e => { mx = e.clientX / innerWidth - 0.5; my = e.clientY / innerHeight - 0.5; });
+
+/* ================= nav active ================= */
+const navs = [...document.querySelectorAll("[data-nav]")];
+function updateNav() {
+  let cur = "top";
+  ["top", "anatomie", "parfums", "kiosques"].forEach(id => { const s = el(id); if (s && s.getBoundingClientRect().top < innerHeight * 0.5) cur = id; });
+  navs.forEach(a => a.classList.toggle("on", a.dataset.nav === cur));
+}
+
+
+/* ================= recettes en carnet ================= */
+const REC_ = [
+  { ing: [["300 g", "carrots, peeled and chopped"], ["20 g", "fresh ginger, grated"], ["300 ml", "whole milk"], ["250 ml", "whipping cream"], ["120 g", "sugar"], ["4", "egg yolks"], ["1 tbsp", "lemon juice"], ["1 pinch", "salt"]],
+    steps: [["Cook the carrots", "In the milk, over low heat, with the ginger, until they mash on their own.", "20 min", "gentle, no big bubbles"], ["Blend", "Everything, finely, with the cream, lemon and salt.", "", ""], ["Make the custard", "Yolks + sugar, pour the hot mix over, then low heat until it coats the spoon (82 °C).", "6 min", "never let it boil!"], ["Chill", "Strain, cover, into the fridge.", "4 h", "even better overnight"], ["Churn", "Ice cream maker, then the freezer to firm up.", "25 min", ""]],
+    note: "The secret: roast the carrots for 10 min first. It changes everything." },
+  { ing: [["200 g", "cooked beetroot, peeled"], ["200 g", "raspberries"], ["250 ml", "whole milk"], ["250 ml", "whipping cream"], ["130 g", "sugar"], ["4", "egg yolks"], ["1 tbsp", "lemon juice"]],
+    steps: [["Pink purée", "Beetroot + raspberries + lemon in the blender, then sieve out the seeds.", "", "wear gloves…"], ["Heat", "The milk and cream until the first bubbles.", "5 min", ""], ["Make the custard", "Yolks + sugar, pour the hot milk over, low heat to 82 °C.", "6 min", ""], ["Combine", "Purée into the custard, then into the fridge.", "4 h", ""], ["Churn", "Ice cream maker, then the freezer.", "25 min", "the colour deepens as it freezes"]],
+    note: "Raw beetroot? 1 h in the oven at 200 °C, wrapped in foil." },
+  { ing: [["250 g", "frozen peas"], ["15 g", "mint leaves"], ["300 ml", "whole milk"], ["250 ml", "whipping cream"], ["120 g", "sugar"], ["4", "egg yolks"], ["1 pinch", "salt"]],
+    steps: [["Steep the mint", "Hot milk + cream, mint in, lid on, off the heat.", "20 min", ""], ["Blanch the peas", "Boiling water, then straight into iced water.", "3 min", "that's what keeps them green"], ["Blend", "Take out the mint, blend with the peas and salt, then sieve.", "", ""], ["Make the custard", "Yolks + sugar, pour the hot mix over, low heat to 82 °C.", "6 min", ""], ["Chill and churn", "Fridge, then ice cream maker.", "4 h", ""]],
+    note: "The sieve is what makes it smooth. Don't skip it." },
+  { ing: [["300 g", "sweet potato"], ["1.5 tsp", "cinnamon"], ["300 ml", "whole milk"], ["250 ml", "whipping cream"], ["110 g", "brown sugar"], ["4", "egg yolks"], ["1 pinch", "salt"]],
+    steps: [["Roast", "The whole potato at 200 °C, then scoop out the flesh.", "45 min", "it already smells like dessert"], ["Heat", "Milk + cream + cinnamon.", "5 min", ""], ["Make the custard", "Yolks + brown sugar, pour the hot milk over, low heat to 82 °C.", "6 min", ""], ["Blend", "With the flesh and salt, then into the fridge.", "4 h", ""], ["Churn", "Ice cream maker, then the freezer.", "25 min", ""]],
+    note: "Roasted, not boiled: that's where the caramel taste comes from." },
+  { ing: [["450 g", "ripe avocado flesh"], ["400 ml", "coconut milk"], ["120 g", "sugar"], ["4 tbsp", "lime juice"], ["1", "lime, zested"], ["1 pinch", "salt"]],
+    steps: [["Dissolve the sugar", "Warm coconut milk + sugar, just until it melts.", "3 min", ""], ["Blend", "With the avocado, lime juice, zest and salt. Really smooth.", "", "no lumps!"], ["Chill", "Cling film on the surface, then the fridge.", "2 h", "or it turns brown"], ["Churn", "Ice cream maker, then the freezer.", "20 min", ""]],
+    note: "The easiest one: no cooking, no eggs, no dairy." },
+  { ing: [["800 g", "very ripe tomatoes"], ["150 g", "sugar"], ["150 ml", "water"], ["15 g", "basil"], ["2 tbsp", "lemon juice"], ["1 pinch", "salt"]],
+    steps: [["Basil syrup", "Water + sugar to the boil, basil in, off the heat.", "15 min", ""], ["Tomato purée", "Blend, then sieve out the skin and seeds.", "", ""], ["Combine", "Syrup without the basil + purée + lemon + salt.", "", "taste it: a bit too sweet is right"], ["Chill", "In the fridge.", "2 h", ""], ["Churn", "Ice cream maker, then the freezer. A basil leaf to serve.", "25 min", ""]],
+    note: "Cold dulls sweetness, so the purée should taste a little too sweet." }
+];
+const REC = ORDER.map(i => REC_[i]);
+const carnet = el("carnet");
+let step = 0, nSteps = 0;
+function setStep(k) {
+  step = clamp(k, 0, nSteps - 1);
+  carnet.querySelectorAll(".card2").forEach((c, i) => {
+    c.className = "card2" + (i === step ? " cur" : i === step + 1 ? " nx" : i === step + 2 ? " nx2" : i < step ? " pv" : "");
+  });
+  carnet.querySelector(".ccount").textContent = `Step ${step + 1} / ${nSteps}`;
+  carnet.querySelectorAll(".cdots i").forEach((d, i) => d.classList.toggle("on", i === step));
+  carnet.querySelector(".prev").disabled = step === 0;
+  carnet.querySelector(".next").textContent = step === nSteps - 1 ? "Enjoy!" : "Next →";
+}
+function openCarnet(ev) {
+  const i = Math.max(0, curF), f = F[i], r = REC[i];
+  carnet.style.setProperty("--cbg", f.bg);
+  carnet.style.setProperty("--cink", "#14304d");
+  const b = ev.currentTarget.getBoundingClientRect();
+  carnet.style.setProperty("--ox", (b.left + b.width / 2) + "px"); carnet.style.setProperty("--oy", (b.top + b.height / 2) + "px");
+  carnet.querySelector(".ct").innerHTML = `${f.name}<small>+ ${f.with}</small>`;
+  carnet.querySelector(".cing").innerHTML = r.ing.map(([q, n]) => `<li><b>${q}</b><span>${n}</span></li>`).join("");
+  carnet.querySelector(".hand").textContent = r.note;
+  nSteps = r.steps.length;
+  carnet.querySelector(".cards").innerHTML = r.steps.map(([t, x, d, sc], k) =>
+    `<div class="card2"><div class="n">${String(k + 1).padStart(2, "0")}</div><h4>${t}</h4><p>${x}</p>${d ? `<span class="time">${d}</span>` : ""}${sc ? `<span class="scrib">${sc}</span>` : ""}</div>`).join("");
+  carnet.querySelector(".cdots").innerHTML = r.steps.map(() => "<i></i>").join("");
+  setStep(0);
+  carnet.classList.add("open"); carnet.setAttribute("aria-hidden", "false");
+  carnet.scrollTop = 0;
+  setTimeout(() => carnet.querySelector(".next").focus({ preventScroll: true }), 300); // sans faire défiler le carnet
+}
+function closeCarnet() { carnet.classList.remove("open"); carnet.setAttribute("aria-hidden", "true"); el("recBtn").focus(); }
+el("recBtn").addEventListener("click", openCarnet);
+carnet.querySelector(".cx").addEventListener("click", closeCarnet);
+carnet.querySelector(".prev").addEventListener("click", () => setStep(step - 1));
+carnet.querySelector(".next").addEventListener("click", () => step === nSteps - 1 ? closeCarnet() : setStep(step + 1));
+addEventListener("keydown", e => {
+  if (!carnet.classList.contains("open")) return;
+  if (e.key === "Escape") closeCarnet();
+  if (e.key === "ArrowRight") setStep(step + 1);
+  if (e.key === "ArrowLeft") setStep(step - 1);
+});
+
+/* ================= style B : fond vif + grand nom ================= */
+const tintEl = el("tint"), giantEl = el("giant"), giantSpan = giantEl.querySelector("span");
+const CREAM = new THREE.Color("#cfe8ff"), BGS = F.map(f => new THREE.Color(f.bg)), cBg = new THREE.Color(), cG = new THREE.Color();
+const rootStyle = document.documentElement.style;
+let inkLight = false, giantF = -1;
+function setGiant(i) {
+  if (i === giantF) return; giantF = i;
+  giantSpan.classList.add("out");
+  setTimeout(() => {
+    giantSpan.textContent = F[i].name;
+    giantSpan.style.fontSize = Math.min(30, 150 / F[i].name.length) + "vw";
+    giantSpan.style.color = "rgba(255, 255, 255, .42)";
+    giantSpan.classList.remove("out");
+  }, giantF < 0 ? 0 : 260);
+}
+const easeBack = w => { const c1 = 1.9, c3 = c1 + 1; return 1 + c3 * Math.pow(w - 1, 3) + c1 * Math.pow(w - 1, 2); };
+
+/* ================= ornements : forme graphique + ingrédients translucides, un jeu par parfum ================= */
+const OT = Math.PI * 2;
+const pol = (r, a, c = 0) => [c + r * Math.cos(a), c + r * Math.sin(a)];
+const poly = pts => "M" + pts.map(p => p[0].toFixed(1) + " " + p[1].toFixed(1)).join("L") + "Z";
+const ring = (r, c = 0) => `M${c + r} ${c}A${r} ${r} 0 1 0 ${c - r} ${c}A${r} ${r} 0 1 0 ${c + r} ${c}Z`;
+const range = n => Array.from({ length: n }, (_, k) => k);
+// grandes formes derrière la glace (viewBox -50 -50 100 100)
+const BACK = [
+  range(20).map(k => { const a = k / 20 * OT; return `<path d="${poly([[0, 0], pol(48, a - 0.07), pol(48, a + 0.07)])}"/>`; }).join("") + `<path opacity=".6" d="${ring(16)}"/>`, // carotte : petit soleil
+  `<path d="${poly(range(56).map(k => pol(k % 2 ? 42 : 48, k / 56 * OT)))}"/><path opacity=".5" d="${ring(33)}"/>`,                             // betterave : badge étoilé
+  range(10).map(k => { const a = k / 10 * OT; const [x1, y1] = pol(56, a), [x2, y2] = pol(56, a + 0.3), [c1, d1] = pol(30, a + 0.6), [c2, d2] = pol(30, a + 0.9);
+    return `<path d="M0 0Q${c1.toFixed(1)} ${d1.toFixed(1)} ${x1.toFixed(1)} ${y1.toFixed(1)}L${x2.toFixed(1)} ${y2.toFixed(1)}Q${c2.toFixed(1)} ${d2.toFixed(1)} 0 0Z"/>`; }).join(""), // petit pois : tourbillon
+  `<path fill-rule="evenodd" d="${[48, 40, 32, 24, 16, 8].map(r => ring(r)).join("")}"/>`,                                                       // patate douce : anneaux
+  `<path fill-rule="evenodd" d="M-36 -46H36Q46 -46 46 -36V36Q46 46 36 46H-36Q-46 46 -46 36V-36Q-46 -46 -36 -46Z${range(8).map(i => range(8).map(j => `M${-39 + i * 10} ${-39 + j * 10}h8v8h-8Z`).join("")).join("")}"/>`, // avocat : carte quadrillée
+  `<path fill-rule="evenodd" d="${poly(range(160).map(k => pol(43 + 5 * Math.cos(k / 160 * OT * 12), k / 160 * OT)))}${ring(30)}"/><path d="${ring(24)}"/>` // tomate : fleur festonnée
+];
+const BACK_S = [62, 64, 66, 62, 58, 64];
+// ingrédients (viewBox 0 0 100 100, blanc, plusieurs niveaux d'opacité pour le relief)
+const SYM = {
+  carrot: `<path opacity=".8" d="M62 30C75 34 78 46 71 56L31 95C27 99 21 95 24 90L49 39C52 32 57 29 62 30Z"/><path d="M60 31C55 20 56 9 61 3C66 12 66 22 64 31ZM64 33C70 22 80 16 92 15C87 25 77 32 67 36ZM58 32C50 23 41 20 32 22C38 29 48 33 57 35ZM52 50L62 53L60 56L50 53ZM42 66L51 69L49 72L40 69ZM34 80L41 82L40 85L32 83Z"/>`,
+  ginger: `<path opacity=".8" d="M14 62C10 52 18 43 28 46C29 36 40 31 48 37C53 27 67 28 69 39C80 36 90 46 86 56C83 65 73 67 66 63C61 72 47 75 40 67C32 74 18 72 14 62Z"/><ellipse cx="48" cy="34" rx="4" ry="6"/><ellipse cx="70" cy="40" rx="5" ry="4"/><ellipse cx="27" cy="50" rx="4" ry="5"/>`,
+  coin: `<circle cx="50" cy="50" r="40" opacity=".7"/><path fill-rule="evenodd" d="${ring(24, 50)}${ring(16, 50)}"/><circle cx="50" cy="50" r="8"/>`,
+  beet: `<path opacity=".8" d="M50 38C71 38 82 53 78 68C74 81 62 87 53 89L50 99L47 89C38 87 26 81 22 68C18 53 29 38 50 38Z"/><path opacity=".6" d="M47 40C39 26 29 18 16 15C20 28 31 38 45 43ZM53 40C61 24 73 14 88 11C84 26 71 38 55 43ZM50 39C49 27 50 15 54 4C58 17 56 29 52 39Z"/><ellipse cx="38" cy="60" rx="5" ry="10" transform="rotate(30 38 60)"/>`,
+  rasp: [[40, 30], [60, 30], [30, 46], [50, 46], [70, 46], [32, 62], [50, 62], [68, 62], [41, 77], [59, 77], [50, 90]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="11" opacity=".75"/><circle cx="${x - 3}" cy="${y - 3}" r="3"/>`).join("") + `<path d="M50 20L44 8L50 13L56 8Z"/>`,
+  pod: `<path opacity=".65" d="M6 58C26 30 70 22 96 34C80 62 36 78 6 58Z"/>${[[26, 54, 9], [44, 48, 10], [62, 43, 10], [79, 38, 8]].map(([x, y, r]) => `<circle cx="${x}" cy="${y}" r="${r}"/>`).join("")}<path opacity=".8" d="M94 34C96 26 94 18 88 14C92 22 92 28 90 34Z"/>`,
+  pea: `<circle cx="50" cy="50" r="40" opacity=".8"/><circle cx="38" cy="38" r="11"/>`,
+  mint: `<path fill-rule="evenodd" opacity=".85" d="M50 4C76 16 88 50 54 92L50 98L46 92C12 50 24 16 50 4ZM49 14L51 14L51.5 88L48.5 88ZM51 36L68 25L69 27L51 40ZM49 36L32 25L31 27L49 40ZM51 56L70 45L71 47L51 60ZM49 56L30 45L29 47L49 60Z"/>`,
+  spud: `<path opacity=".8" d="M8 60C12 42 36 30 60 31C80 32 93 42 95 52C92 64 72 74 46 74C26 74 10 70 8 60Z"/><ellipse cx="44" cy="42" rx="14" ry="5"/><circle cx="70" cy="58" r="2.5"/><circle cx="30" cy="62" r="2.5"/><path d="M95 52L100 50L96 55ZM8 60L2 63L9 63Z"/>`,
+  cinn: `<g transform="rotate(-14 50 50)"><rect x="8" y="30" width="84" height="15" rx="7.5" opacity=".75"/><ellipse cx="88" cy="37.5" rx="5" ry="7.5"/><rect x="12" y="52" width="80" height="15" rx="7.5" opacity=".75"/><ellipse cx="88" cy="59.5" rx="5" ry="7.5"/></g>`,
+  anise: range(8).map(k => `<ellipse cx="72" cy="50" rx="22" ry="8" opacity=".75" transform="rotate(${k * 45} 50 50)"/><circle cx="74" cy="50" r="3.5" transform="rotate(${k * 45} 50 50)"/>`).join("") + `<circle cx="50" cy="50" r="7"/>`,
+  avo: `<path opacity=".6" d="M50 6C64 6 70 22 72 36C86 48 90 66 80 82C72 94 28 94 20 82C10 66 14 48 28 36C30 22 36 6 50 6Z"/><path opacity=".6" transform="translate(50 56) scale(.84) translate(-50 -56)" d="M50 6C64 6 70 22 72 36C86 48 90 66 80 82C72 94 28 94 20 82C10 66 14 48 28 36C30 22 36 6 50 6Z"/><circle cx="50" cy="64" r="15"/>`,
+  lime: `<circle cx="50" cy="50" r="46" opacity=".6"/>` + range(9).map(k => { const a0 = k / 9 * OT + 0.06, a1 = (k + 1) / 9 * OT - 0.06, [x1, y1] = pol(38, a0, 50), [x2, y2] = pol(38, a1, 50);
+    return `<path d="M${pol(6, a0, 50).map(v => v.toFixed(1)).join(" ")}L${x1.toFixed(1)} ${y1.toFixed(1)}A38 38 0 0 1 ${x2.toFixed(1)} ${y2.toFixed(1)}L${pol(6, a1, 50).map(v => v.toFixed(1)).join(" ")}Z"/>`; }).join(""),
+  tomato: `<path opacity=".78" d="M50 24C74 24 92 40 90 60C88 80 72 92 50 92C28 92 12 80 10 60C8 40 26 24 50 24Z"/><path d="${poly(range(10).map(k => pol(k % 2 ? 6 : 22, k / 10 * OT - Math.PI / 2).map((v, j) => v + (j ? 30 : 50))))}"/><path d="M48 12h4v14h-4Z"/><ellipse cx="32" cy="52" rx="6" ry="11" transform="rotate(25 32 52)"/>`,
+  basil: `<path fill-rule="evenodd" opacity=".85" d="M50 6C80 14 92 52 58 90L50 96L42 90C8 52 20 14 50 6ZM49 16L51 16L51.5 86L48.5 86ZM51 40L70 32L71 34L51 44ZM49 40L30 32L29 34L49 44ZM51 62L68 55L69 57L51 66ZM49 62L32 55L31 57L49 66Z"/>`
+};
+const SETS = [
+  ["carrot", "ginger", "coin", "carrot", "coin", "ginger", "carrot", "coin", "ginger", "coin"],
+  ["beet", "rasp", "rasp", "beet", "rasp", "beet", "rasp", "beet", "rasp", "rasp"],
+  ["pod", "mint", "pea", "pod", "mint", "pea", "pod", "mint", "pea", "pea"],
+  ["spud", "cinn", "anise", "spud", "anise", "cinn", "spud", "anise", "cinn", "anise"],
+  ["avo", "lime", "lime", "avo", "lime", "avo", "lime", "avo", "lime", "lime"],
+  ["tomato", "basil", "basil", "tomato", "basil", "tomato", "basil", "tomato", "basil", "tomato"]
+];
+// emplacements autour de la glace : x %, y %, taille, rotation, profondeur (parallaxe)
+// (les silhouettes restent en arrière-plan, les ingrédients 3D prennent les places proches de la glace)
+const SLOTS = [[27, 50, 8, 40, 1.2], [77, 25, 9, -35, 0.9], [7, 84, 9, 30, 0.6], [93, 9, 7, -25, 0.5], [50, 7, 7, 10, 0.4],
+  [49, 94, 8, 50, 0.7], [22, 9, 6, -15, 0.5], [97, 55, 7, 20, 0.6]];
+const ornEl = el("orn");
+const svgEl = (vb, inner, s) => { ornEl.insertAdjacentHTML("beforeend", `<svg viewBox="${vb}" style="--s:${s}">${inner}</svg>`); return ornEl.lastElementChild; };
+const ORN = F.map((f, i) => ({ on: false, items: [
+  { el: svgEl("-50 -50 100 100", BACK[ORDER[i]], BACK_S[ORDER[i]]), back: true, x: 50, y: 50, r: 0, d: 0, o: 0.22 },
+  ...SLOTS.map(([x, y, s, r, d], k) => ({ el: svgEl("0 0 100 100", SYM[SETS[ORDER[i]][k]], s), back: false, x, y, r: r + i * 17, d, o: 0.42 }))
+] }));
+function updateOrn(Wf, trackW, time, mobile) {
+  ORN.forEach((g, i) => {
+    const w = Wf[i] * trackW;
+    if (w < 0.002) { if (g.on) { g.on = false; g.items.forEach(it => it.el.style.display = "none"); } return; }
+    if (!g.on) { g.on = true; g.items.forEach(it => it.el.style.display = "block"); }
+    const pr = reduce ? 0 : dp - i - 0.5; // position dans le parfum : les ingrédients dérivent au défilement
+    g.items.forEach((it, k) => {
+      const a = clamp(w * 1.6 - k * 0.05, 0, 1);
+      const fl = reduce ? 0 : Math.sin(time * 0.7 + k * 1.7);
+      let sc, rot, y;
+      if (it.back) { sc = 0.7 + 0.3 * (1 - Math.pow(1 - a, 3)); rot = reduce ? 0 : time * 3 + pr * 20; y = mobile ? -3 : 0; }
+      else { sc = 0.35 + 0.65 * easeBack(a); rot = it.r + fl * 6 + pr * 30 * it.d; y = (fl * 10 - pr * 140 * it.d) / innerHeight * 100; }
+      it.el.style.opacity = (a * it.o).toFixed(3);
+      it.el.style.transform = `translate(${it.x}vw, ${(it.y + y).toFixed(2)}vh) translate(-50%, -50%) rotate(${rot.toFixed(2)}deg) scale(${sc.toFixed(3)})`;
+    });
+  });
+}
+
+/* ================= ingrédients en 3D qui flottent autour de la glace ================= */
+const floatRoot = new THREE.Group(); scene.add(floatRoot);
+function deform(geo, fn) { const p = geo.attributes.position, v = new THREE.Vector3(); for (let i = 0; i < p.count; i++) { v.fromBufferAttribute(p, i); fn(v); p.setXYZ(i, v.x, v.y, v.z); } geo.computeVertexNormals(); return geo; }
+const phys = (c, r = 0.5, extra = {}) => new THREE.MeshPhysicalMaterial({ color: c, roughness: r, ...extra });
+const M3 = {
+  carrot: phys("#f07a1f", 0.5, { clearcoat: 0.15 }),
+  green: new THREE.MeshStandardMaterial({ color: "#5f9e34", vertexColors: true, roughness: 0.6, side: THREE.DoubleSide }),
+  ginger: phys("#d6ae74", 0.78),
+  beet: phys("#6e0f30", 0.42, { clearcoat: 0.25, sheen: 0.4, sheenColor: new THREE.Color("#c0406a") }),
+  stalk: phys("#b8285e", 0.5),
+  beetLeaf: new THREE.MeshStandardMaterial({ color: "#4f8a34", vertexColors: true, roughness: 0.55, side: THREE.DoubleSide }),
+  rasp: phys("#b0153b", 0.3, { clearcoat: 0.5, clearcoatRoughness: 0.25, sheen: 0.4, sheenColor: new THREE.Color("#ff8aa0") }),
+  pod: phys("#78b23f", 0.45, { clearcoat: 0.2, side: THREE.DoubleSide }),
+  pea: phys("#86bf45", 0.32, { clearcoat: 0.4 }),
+  spud: phys("#8a3a3c", 0.72),
+  spudIn: phys("#ffa04a", 0.5, { clearcoat: 0.15, emissive: new THREE.Color("#b05010"), emissiveIntensity: 0.35 }),
+  bark: new THREE.MeshStandardMaterial({ color: "#7a3a18", roughness: 0.85, side: THREE.DoubleSide }),
+  anise: phys("#6b3218", 0.7),
+  seed: phys("#c08a4a", 0.3, { clearcoat: 0.6 }),
+  avoSkin: phys("#2e4a1a", 0.6, { side: THREE.DoubleSide }),
+  pit: phys("#7a4520", 0.32, { clearcoat: 0.5 }),
+  tomato: phys("#d8291d", 0.18, { clearcoat: 0.8, clearcoatRoughness: 0.12 })
+};
+const coinCap = new THREE.MeshPhysicalMaterial({ map: carrotFace(), roughness: 0.48, clearcoat: 0.3, clearcoatRoughness: 0.45 });
+const coinSkin = new THREE.MeshStandardMaterial({ color: "#c95a1c", roughness: 0.7 });
+const lumpy = (geo, k, amp = 0.08) => deform(geo, v => { const n = 1 + amp * noise(v.x * 4 + k, v.y * 4, v.z * 4 - k); v.multiplyScalar(n); });
+function avoFaceMat() {
+  const c = document.createElement("canvas"); c.width = c.height = 256; const x = c.getContext("2d");
+  const g = x.createRadialGradient(128, 150, 10, 128, 140, 140);
+  g.addColorStop(0, "#f2eba0"); g.addColorStop(0.55, "#d9e27e"); g.addColorStop(0.85, "#a9cc52"); g.addColorStop(1, "#5d8a2c");
+  x.fillStyle = g; x.fillRect(0, 0, 256, 256);
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace;
+  return new THREE.MeshPhysicalMaterial({ map: t, roughness: 0.38, clearcoat: 0.3, side: THREE.DoubleSide });
+}
+const avoFace = avoFaceMat();
+/* peaux d'ingrédients : couleur + relief peints en procédural (cercles de la carotte, lenticelles, pores, fibres…) */
+function organic(fn, W = 256, H = 256) {
+  const mk = () => { const c = document.createElement("canvas"); c.width = W; c.height = H; return c; };
+  const cm = mk(), cb = mk(), xm = cm.getContext("2d"), xb = cb.getContext("2d"), dm = xm.createImageData(W, H), db = xb.createImageData(W, H);
+  for (let j = 0; j < H; j++) for (let i = 0; i < W; i++) {
+    const u = i / W, v = 1 - j / H, [r, g, b, h] = fn(u, v, Math.cos(u * TAU), Math.sin(u * TAU)), k = (j * W + i) * 4;
+    dm.data[k] = clamp(r) * 255; dm.data[k + 1] = clamp(g) * 255; dm.data[k + 2] = clamp(b) * 255; dm.data[k + 3] = 255;
+    db.data[k] = db.data[k + 1] = db.data[k + 2] = clamp(h) * 255; db.data[k + 3] = 255;
+  }
+  xm.putImageData(dm, 0, 0); xb.putImageData(db, 0, 0);
+  const map = new THREE.CanvasTexture(cm); map.colorSpace = THREE.SRGBColorSpace; map.anisotropy = 4;
+  return { map, bumpMap: new THREE.CanvasTexture(cb) };
+}
+const skinUp = (m, fn, bumpScale, extra = {}) => { Object.assign(m, organic(fn), { bumpScale }, extra); m.needsUpdate = true; };
+skinUp(M3.carrot, (u, v, cu, su) => {
+  const ring = Math.pow(Math.abs(Math.sin(v * 46 + 1.5 * noise(cu * 2, su * 2, v * 6))), 14), st = noise(cu * 3, su * 3, v * 40), n = noise(cu * 6, su * 6, v * 20), sh = sstep(0.9, 1, v);
+  const k = 0.9 + 0.08 * n - 0.22 * ring; return [k * (1 - 0.35 * sh), k * (0.96 + 0.04 * st) * (1 - 0.12 * sh), k * 0.95 * (1 - 0.3 * sh), 0.6 - 0.45 * ring + 0.08 * st];
+}, 0.45, { clearcoat: 0, roughness: 0.62, sheen: 0.35, sheenColor: new THREE.Color("#ffd2a8") });
+skinUp(M3.ginger, (u, v, cu, su) => {
+  const n = noise(cu * 3 + v * 3, su * 3, v * 5), f = noise(cu * 12, su * 12, v * 30), ring = Math.pow(Math.abs(Math.sin(v * 40 + n * 3)), 14);
+  const k = 0.86 + 0.14 * n - 0.25 * ring; return [k, k * 0.97, k * 0.9, 0.5 + 0.2 * f - 0.4 * ring];
+}, 1.4, { roughness: 0.88 });
+skinUp(M3.beet, (u, v, cu, su) => {
+  const n = noise(cu * 4, su * 4, v * 8), s = noise(cu * 30, su * 30, v * 3), lo = sstep(0.4, 0, v), k = 0.8 + 0.2 * n;
+  return [k * (1 + 0.25 * lo), k * (1 - 0.1 * lo), k * (1 + 0.2 * lo), 0.5 + 0.22 * s + 0.15 * n];
+}, 0.9, { clearcoat: 0.08, roughness: 0.55 });
+skinUp(M3.pea, (u, v, cu, su) => { const n = noise(cu * 5, su * 5, v * 8), p = noise(cu * 40, su * 40, v * 40), k = 0.88 + 0.12 * n; return [k * 0.97, k, k * 0.9, 0.5 + 0.3 * p]; },
+  0.6, { clearcoat: 0.12, roughness: 0.48, sheen: 0.3, sheenColor: new THREE.Color("#e8ffd0") });
+skinUp(M3.pod, (u, v, cu, su) => { const vein = Math.pow(Math.abs(Math.sin(v * TAU * 3)), 30), n = noise(cu * 4, su * 4, v * 12), k = 0.84 + 0.12 * n + 0.1 * vein; return [k, k, k * 0.9, 0.5 + 0.25 * noise(cu * 30, su * 30, v * 30) + 0.2 * vein]; },
+  0.8, { clearcoat: 0.06, roughness: 0.58 });
+skinUp(M3.spud, (u, v, cu, su) => {
+  const n = noise(cu * 3, su * 3, v * 6), bl = sstep(0.2, 0.6, noise(cu * 6 + 3, su * 6, v * 10)), st = noise(cu * 50, su * 50, v * 4), eye = sstep(0.62, 0.7, noise(cu * 14, su * 14, v * 14 + 5));
+  const k = 0.86 + 0.12 * n - 0.12 * bl - 0.4 * eye; return [k * 1.02, k * 0.95, k * 0.98, 0.5 + 0.2 * st - 0.3 * eye];
+}, 1.3, { roughness: 0.86 });
+skinUp(M3.spudIn, (u, v) => { const n = noise(u * 10, v * 10, 1), f = noise(u * 60, v * 60, 4), r = Math.hypot(u - 0.5, v - 0.5), k = 0.88 + 0.1 * n + 0.05 * f - 0.25 * sstep(0.4, 0.46, r); return [k, k * 0.97, k * 0.9, 0.5 + 0.3 * f]; },
+  0.8, { roughness: 0.6, clearcoat: 0.04 });
+skinUp(M3.bark, (u, v, cu, su) => { const s = noise(cu * 30, su * 30, v * 2), n = noise(cu * 4, su * 4, v * 3), k = 0.8 + 0.15 * n + 0.1 * s; return [k, k * 0.95, k * 0.9, 0.5 + 0.35 * s]; }, 1.5);
+skinUp(M3.anise, (u, v, cu, su) => { const s = noise(cu * 20, su * 20, v * 20), k = 0.82 + 0.18 * s; return [k, k * 0.95, k * 0.9, 0.5 + 0.4 * s]; }, 1.5, { roughness: 0.85 });
+skinUp(M3.avoSkin, (u, v, cu, su) => {
+  const pb = Math.abs(noise(cu * 25, su * 25, v * 40)), sp = sstep(0.55, 0.65, noise(cu * 40 + 2, su * 40, v * 60)), k = 0.82 + 0.15 * noise(cu * 3, su * 3, v * 4) + 0.25 * sp;
+  return [k, k, k * 0.9, 1 - Math.min(1, pb * 2.2)];
+}, 2.2, { roughness: 0.72 });
+skinUp(M3.tomato, (u, v, cu, su) => {  // peau rouge, épaules plus orangées autour du pédoncule, pores minuscules
+  const sh = sstep(0.72, 0.96, v), n = noise(cu * 3, su * 3, v * 5), sp = noise(cu * 60, su * 60, v * 60), k = 0.9 + 0.1 * n;
+  return [k * (0.85 + 0.05 * sh), k * (0.16 + 0.28 * sh), k * (0.11 + 0.04 * sh), 0.5 + 0.12 * sp];
+}, 0.35, { color: new THREE.Color("#ffffff"), roughness: 0.24, clearcoat: 0.55, clearcoatRoughness: 0.18 });
+coinCap.clearcoat = 0.12; basilMat.clearcoat = 0.12; basilMat.roughness = 0.5; M3.rasp.clearcoat = 0.2;
+const sideways = (m, rx = Math.PI / 2 * 0.82) => { m.rotation.x = rx; return m; }; // face tournée vers l'écran
+const FAC = {
+  carrot() {
+    const g = new THREE.Group(), prof = [];
+    for (let k = 0; k <= 30; k++) { const t = k / 30; prof.push(new THREE.Vector2(0.001 + 0.2 * Math.pow(t, 0.62) * Math.sqrt(Math.max(0, 1 - Math.pow(t, 14))), t * 1.5)); }
+    g.add(new THREE.Mesh(deform(new THREE.LatheGeometry(prof, 40), v => {
+      const y = v.y, s = 1 + 0.035 * noise(v.x * 5, y * 5, v.z * 5) - 0.07 * Math.pow(Math.abs(Math.sin(y * 17 + 2.5 * noise(v.x * 2, y * 1.5, v.z * 2))), 18);
+      v.x = v.x * s + 0.06 * Math.pow(1 - y / 1.5, 2); v.z *= s;
+    }), M3.carrot));
+    for (let j = 0; j < 5; j++) {
+      const h = new THREE.Group(); h.position.y = 1.45; h.rotation.y = j * 1.26;
+      const l = new THREE.Mesh(leafGeo(0.75, 0.06, 0.6, 0.5), M3.green); l.rotation.z = Math.PI / 2 - 0.3 - 0.08 * j; h.add(l); g.add(h);
+    }
+    g.rotation.z = -0.9; g.userData.r = 0.8; return g;
+  },
+  coin() {
+    const geo = deform(new THREE.CylinderGeometry(0.3, 0.29, 0.07, 48), v => { const a = Math.atan2(v.z, v.x), w = 1 + 0.06 * noise(Math.cos(a) * 1.8, Math.sin(a) * 1.8, 3); v.x *= w; v.z *= w; });
+    return sideways(new THREE.Mesh(geo, [coinSkin, coinCap, coinCap]));
+  },
+  ginger() {
+    const g = new THREE.Group();
+    [[0, 0, 0, 0.3, 1.3, 0.6], [0.36, 0.14, 0, 0.15, 1.2, 0.9], [-0.34, 0.1, 0.05, 0.16, 1.1, 0.9], [0.06, 0.22, 0.04, 0.14, 0.9, 1.3], [-0.08, -0.14, 0.05, 0.12, 1, 1]].forEach(([x, y, z, r, sx, sy], k) => {
+      const m = new THREE.Mesh(lumpy(new THREE.SphereGeometry(r, 32, 24), k * 3, 0.12), M3.ginger); m.position.set(x, y, z); m.scale.set(sx, sy, 0.8); g.add(m);
+    });
+    return g;
+  },
+  beet() {
+    const g = new THREE.Group();
+    g.add(new THREE.Mesh(deform(new THREE.SphereGeometry(0.42, 48, 36), v => {
+      const y = v.y / 0.42, k = (y < 0 ? 1 - 0.55 * Math.pow(-y, 1.6) : 1 - 0.12 * Math.pow(y, 3)) * (1 + 0.03 * noise(v.x * 6, v.y * 6, v.z * 6));
+      v.x *= k; v.z *= k;
+    }), M3.beet));
+    const tail = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.002, 0.45, 10), M3.beet); tail.position.y = -0.6; tail.rotation.z = 0.15; g.add(tail);
+    for (let j = 0; j < 3; j++) {
+      const h = new THREE.Group(); h.position.y = 0.36; h.rotation.y = j * 2.1; h.rotation.z = 0.35; g.add(h);
+      const st = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.026, 0.5, 10), M3.stalk); st.position.y = 0.25; h.add(st);
+      const l = new THREE.Mesh(leafGeo(0.6, 0.22, 0.12, 0.25), M3.beetLeaf); l.position.y = 0.48; l.rotation.z = Math.PI / 2 - 0.2; h.add(l);
+    }
+    g.userData.r = 0.6; return g;
+  },
+  rasp() {
+    const g = new THREE.Group(), n = 64, mesh = new THREE.InstancedMesh(new THREE.SphereGeometry(1, 14, 10), M3.rasp, n), m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), s = new THREE.Vector3();
+    for (let i = 0; i < n; i++) {
+      const y = 1 - (i + 0.5) / n * 1.8, r = Math.sqrt(Math.max(0, 1 - y * y)), a = i * 2.39996, sc = 0.075 + 0.01 * hash(i, 7, 3);
+      m4.compose(new THREE.Vector3(Math.cos(a) * r * 0.22, y * 0.27, Math.sin(a) * r * 0.22), q, s.set(sc, sc, sc)); mesh.setMatrixAt(i, m4); mesh.setColorAt(i, new THREE.Color(1, 1, 1).offsetHSL(0.012 * (hash(i, 3, 4) - 0.5), 0, 0.1 * (hash(i, 5, 6) - 0.5)));
+    }
+    g.add(mesh);
+    for (let k = 0; k < 5; k++) { const l = new THREE.Mesh(leafGeo(0.14, 0.035, 0, 1.2, 0.4), calyxMat); l.position.y = 0.29; l.rotation.set(0, k / 5 * TAU, 0); l.rotateX(-Math.PI / 2 + 0.4); g.add(l); }
+    g.userData.r = 0.33; g.userData.noCenter = true; g.rotation.x = 0.5; return g;
+  },
+  pod() {
+    const g = new THREE.Group();
+    g.add(new THREE.Mesh(deform(new THREE.SphereGeometry(1, 56, 28, 0, TAU, 0.85, Math.PI - 0.85), v => {
+      const t = Math.max(0, 1 - v.x * v.x); v.y *= 0.3 * Math.sqrt(t); v.z *= 0.3 * Math.sqrt(t); v.x *= 1.1; v.y += 0.15 * v.x * v.x;
+    }), M3.pod));
+    for (let k = 0; k < 5; k++) { const x = -0.64 + k * 0.32, p = new THREE.Mesh(new THREE.SphereGeometry(0.15 * (1 - 0.35 * x * x), 24, 18), M3.pea); p.position.set(x, 0.06 + 0.15 * x * x, 0); g.add(p); }
+    g.rotation.set(1.05, 0, 0.3); return g;
+  },
+  peas() {
+    const g = new THREE.Group();
+    [[0, 0, 0], [0.3, 0.06, 0.05], [0.13, 0.27, -0.04]].forEach(([x, y, z]) => { const p = new THREE.Mesh(new THREE.SphereGeometry(0.16, 28, 20), M3.pea); p.position.set(x, y, z); g.add(p); });
+    return g;
+  },
+  mint() {
+    const g = new THREE.Group();
+    for (let j = 0; j < 4; j++) { const l = new THREE.Mesh(leafGeo(0.6, 0.24, 0.32, 0.3), mintMat); l.rotation.z = j * Math.PI / 2 + 0.4; l.rotation.x = 0.25 * (j % 2 ? 1 : -1); g.add(l); }
+    return g;
+  },
+  spud() {
+    return new THREE.Mesh(deform(new THREE.SphereGeometry(0.3, 48, 32), v => {
+      v.x *= 2.3; const t = v.x / 0.69, k = (1 - 0.45 * Math.pow(Math.abs(t), 2.2)) * (1 + 0.07 * noise(v.x * 4, v.y * 4, v.z * 4));
+      v.y = v.y * k + 0.07 * t * t; v.z *= k;
+    }), M3.spud);
+  },
+  slice() {
+    const geo = deform(new THREE.CylinderGeometry(0.3, 0.3, 0.09, 48), v => { const a = Math.atan2(v.z, v.x), w = 1 + 0.08 * noise(Math.cos(a) * 1.5, Math.sin(a) * 1.5, 7); v.x *= w * 1.15; v.z *= w; });
+    return sideways(new THREE.Mesh(geo, [M3.spud, M3.spudIn, M3.spudIn]));
+  },
+  cinn() {
+    const g = new THREE.Group();
+    g.add(new THREE.Mesh(new THREE.CylinderGeometry(0.075, 0.075, 1.0, 24, 1, true, 0, 5.2), M3.bark), new THREE.Mesh(new THREE.CylinderGeometry(0.048, 0.048, 1.0, 20, 1, true, 2, 4.6), M3.bark));
+    const b = g.clone(); b.position.set(0.14, 0.02, -0.05); b.rotation.y = 1.2; g.add(b);
+    g.rotation.z = 1.1; return g;
+  },
+  anise() {
+    const g = new THREE.Group();
+    for (let k = 0; k < 8; k++) {
+      const h = new THREE.Group(); h.rotation.y = k / 8 * TAU; g.add(h);
+      const p = new THREE.Mesh(lumpy(new THREE.SphereGeometry(1, 20, 12), k, 0.05), M3.anise); p.scale.set(0.2, 0.07, 0.085); p.position.x = 0.21; h.add(p);
+      const s = new THREE.Mesh(new THREE.SphereGeometry(0.045, 14, 10), M3.seed); s.position.set(0.22, 0.06, 0); s.scale.set(1.4, 0.7, 1); h.add(s);
+    }
+    return sideways(g, 1.1);
+  },
+  avo() {
+    const g = new THREE.Group(), pts = [[0.001, -0.5], [0.28, -0.46], [0.4, -0.3], [0.42, -0.1], [0.36, 0.1], [0.26, 0.28], [0.2, 0.42], [0.12, 0.52], [0.001, 0.56]];
+    const curve = new THREE.SplineCurve(pts.map(([x, y]) => new THREE.Vector2(x, y))).getPoints(40);
+    g.add(new THREE.Mesh(new THREE.LatheGeometry(curve, 40, 0, Math.PI), M3.avoSkin));
+    const shape = new THREE.Shape([...curve, ...curve.slice().reverse().map(p => new THREE.Vector2(-p.x, p.y))]);
+    const face = new THREE.ShapeGeometry(shape, 24), fp = face.attributes.position, uv = [];
+    for (let i = 0; i < fp.count; i++) uv.push(fp.getX(i) / 0.9 + 0.5, (fp.getY(i) + 0.5) / 1.06);
+    face.setAttribute("uv", new THREE.Float32BufferAttribute(uv, 2));
+    const fm = new THREE.Mesh(face, avoFace); fm.scale.setScalar(0.97); fm.rotation.y = -Math.PI / 2; fm.position.x = -0.002; g.add(fm);
+    const pit = new THREE.Mesh(new THREE.SphereGeometry(0.19, 36, 28), M3.pit); pit.position.set(0, -0.12, 0); pit.scale.x = 0.8; g.add(pit);
+    g.rotation.y = Math.PI / 2; const h = new THREE.Group(); h.add(g); return h;
+  },
+  lime() { return sideways(limeWheel(), Math.PI / 2 * 0.85); },
+  tomato() {
+    const g = new THREE.Group();
+    g.add(new THREE.Mesh(deform(new THREE.SphereGeometry(0.4, 48, 36), v => {
+      const a = Math.atan2(v.z, v.x), y = v.y / 0.4, k = 1 + 0.045 * Math.cos(5 * a) * (1 - Math.abs(y));
+      v.x *= k; v.z *= k; v.y *= 0.82; if (y > 0.6) v.y -= 0.08 * (y - 0.6) / 0.4;
+    }), M3.tomato));
+    for (let k = 0; k < 5; k++) { const l = new THREE.Mesh(leafGeo(0.26, 0.05, 0, 1.2, 0.4), calyxMat); l.position.y = 0.27; l.rotation.set(0, k / 5 * TAU, 0); l.rotateX(-Math.PI / 2 + 0.25); g.add(l); }
+    const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.024, 0.12, 8), calyxMat); stem.position.y = 0.32; g.add(stem);
+    g.rotation.x = 0.4; return g;
+  },
+  cherry() { const g = cherryTomato(); g.rotation.x = 0.5; return g; },
+  basil() {
+    const g = new THREE.Group();
+    [[0, 0], [2.2, 0.15], [4.1, -0.1]].forEach(([r, x]) => { const l = new THREE.Mesh(leafGeo(0.8, 0.34, 0, 0.3, 0.8), basilMat); l.rotation.z = r; l.rotation.x = x; g.add(l); });
+    return g;
+  }
+};
+const SETS3 = [
+  ["carrot", "coin", "ginger", "ginger", "carrot", "coin"],
+  ["beet", "rasp", "rasp", "beet", "rasp", "rasp"],
+  ["pod", "mint", "peas", "pod", "mint", "peas"],
+  ["spud", "slice", "cinn", "anise", "spud", "anise"],
+  ["avo", "lime", "avo", "lime", "lime", "avo"],
+  ["tomato", "basil", "cherry", "basil", "tomato", "cherry"]
+];
+// emplacements : x %, y %, taille (part de la hauteur visible), profondeur z
+const SL3 = [[35, 21, 0.17, -1], [65, 17, 0.14, -2], [32, 79, 0.16, 0.5], [67, 81, 0.17, -1], [13, 20, 0.11, -3], [87, 90, 0.12, -2]];
+const SL3M = [[11, 41, 0.085, -1], [89, 36, 0.08, -2], [10, 62, 0.08, 0], [90, 63, 0.085, -1], [84, 22, 0.06, -3], [15, 71, 0.06, -3]];
+const _box = new THREE.Box3(), _c = new THREE.Vector3(), _sz = new THREE.Vector3();
+const FLO = ORDER.map(o => SETS3[o]).map((set, i) => {
+  const group = new THREE.Group(); floatRoot.add(group);
+  return { group, items: set.map((name, k) => {
+    const obj = FAC[name](), h = new THREE.Group(); h.add(obj); group.add(h);
+    obj.updateMatrixWorld(true); _box.setFromObject(obj); _box.getCenter(_c); _box.getSize(_sz);
+    const r = obj.userData.r ?? _sz.length() / 2;
+    if (!obj.userData.noCenter) obj.position.sub(_c);
+    return { h, r, rx: (hash(i, k, 1) - 0.5) * 0.6, ry: (hash(i, k, 2) - 0.5) * 0.5, rz: (hash(i, k, 3) - 0.5) * 1.2 };
+  }) };
+});
+const tanHalf = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
+function update3D(Wf, trackW, time, mobile) {
+  const slots = mobile ? SL3M : SL3, T = reduce ? 0 : time;
+  FLO.forEach((g, i) => {
+    const w = Wf[i] * trackW;
+    g.group.visible = w > 0.002; if (!g.group.visible) return;
+    const pr = reduce ? 0 : dp - i - 0.5;
+    g.items.forEach((it, k) => {
+      const [sx, sy, s, z] = slots[k], a = clamp(w * 1.6 - k * 0.07, 0, 1);
+      const hz = 2 * (camera.position.z - z) * tanHalf, wz = hz * camera.aspect, d = 1 + 0.3 * (k % 3);
+      it.h.position.set((sx / 100 - 0.5) * wz + mxs * 0.25 * d, -(sy / 100 - 0.5) * hz + Math.sin(T * 0.9 + k * 1.3) * 0.06 - pr * 0.5 * d, z);
+      it.h.scale.setScalar(Math.max(0.0001, easeBack(a)) * s * hz / 2 / it.r);
+      it.h.rotation.set(it.rx + 0.25 * Math.sin(T * 0.6 + k), it.ry + 0.45 * Math.sin(T * 0.45 + k * 2), it.rz + 0.15 * Math.sin(T * 0.7 + k) + pr * 0.5);
+    });
+  });
+}
+
+/* ================= boucle ================= */
+const S = { ...targetState(scrollY) };
+let dp = flavorPos(), prevSY = scrollY, vel = 0, intro = 0, t0 = performance.now();
+const XF = 0.18;
+const tmpC = new THREE.Color();
+
+let lastT = performance.now();
+const damp = (k, dt) => 1 - Math.pow(1 - k, dt * 60);
+function frame(now) {
+  const dt = Math.min(0.1, (now - lastT) / 1000); lastT = now;
+  if (wheeling) {
+    sCur += (sTarget - sCur) * damp(0.085, dt);
+    if (Math.abs(sTarget - sCur) < 0.4) { sCur = sTarget; wheeling = false; }
+    scrollTo(0, sCur);
+  }
+  const sy = scrollY;
+  vel += ((sy - prevSY) - vel) * 0.15; prevSY = sy;
+
+  // état cible + inertie (le poids de l'objet)
+  const T = targetState(sy);
+  const k = reduce ? 1 : damp(0.075, dt);
+  keys.forEach(key => S[key] += (T[key] - S[key]) * k);
+
+  // parfums
+  const fp = flavorPos();
+  dp += (fp - dp) * (reduce ? 1 : damp(0.12, dt));
+  const fi = clamp(Math.floor(dp), 0, F.length - 1), u = dp - fi;
+  if (fi !== curF) { renderText(fi); curF = fi; iceMat.map = SKINS[fi]; setGiant(fi); }
+  // une rotation par parfum, avec pause au début et à la fin
+  const v = clamp((u - XF / 2) / (1 - XF), 0, 1);
+  const spin = (fi + v - Math.sin(2 * Math.PI * v) / (2 * Math.PI)) * Math.PI * 2;
+  // fondu de couleur entre deux parfums
+  const outK = fi < F.length - 1 ? sstep(1 - XF / 2, 1 + XF / 2, u) : 0;
+  const inK = fi > 0 ? sstep(-XF / 2, XF / 2, u) : 1;
+  if (outK > 0) tmpC.copy(COLS[fi]).lerp(COLS[fi + 1], outK);
+  else if (inK < 1) tmpC.copy(COLS[fi - 1]).lerp(COLS[fi], inK);
+  else tmpC.copy(COLS[fi]);
+  iceMat.color.copy(tmpC); iceMat.sheenColor.copy(tmpC).lerp(cG.set("#ffffff"), 0.45); // velouté de la même couleur, pas un voile blanc
+  iceMat.roughness = Math.min(0.9, 0.16 + lerp(F[fi].rough, F[Math.min(fi + 1, F.length - 1)].rough, outK)); // mat comme une vraie glace
+  iceMat.clearcoat = 0.35 * lerp(F[fi].cc, F[Math.min(fi + 1, F.length - 1)].cc, outK);
+  const bump = Math.sin(Math.PI * Math.max(outK, 1 - inK)); // petit saut au changement
+
+  // intro : la glace monte depuis le bas
+  if (window.__loaded) intro = Math.min(1, intro + 0.72 * dt);
+  const ie = 1 - Math.pow(1 - intro, 4);
+
+  // appliquer
+  const mobile = W < 900;
+  const time = (now - t0) / 1000;
+  mxs += (mx - mxs) * damp(0.05, dt); mys += (my - mys) * damp(0.05, dt);
+  const sc = 1.0 * S.s * (mobile ? 0.62 : 1) * (0.86 + 0.14 * ie) * (1 - 0.07 * bump);
+  wrap.scale.setScalar(sc);
+  wrap.position.x = (mobile ? 0 : S.x) * visW;
+  wrap.position.y = -S.y * visH + (1 - ie) * -visH * 0.9 + (reduce ? 0 : Math.sin(time * 0.9) * 0.05) + bump * 0.12 + (mobile ? visH * 0.04 : 0);
+  wrap.rotation.set(
+    S.rx + mys * 0.18,
+    S.ry + spin + mxs * 0.35 + (1 - ie) * -1.2,
+    S.rz + clamp(-vel * 0.002, -0.12, 0.12)
+  );
+
+  // ---- poids de chaque parfum (pour garnitures et mouvements) ----
+  const Wf = F.map(() => 0);
+  Wf[fi] = inK * (1 - outK); if (fi > 0) Wf[fi - 1] += 1 - inK; if (fi < F.length - 1) Wf[fi + 1] += outK;
+  const Wo = []; ORDER.forEach((o, p) => { Wo[o] = Wf[p]; }); // poids rangés dans l'ordre d'origine (mouvements propres à chaque parfum)
+  TOPS.forEach((t, i) => { t.visible = Wf[i] > 0.001; t.scale.setScalar(Math.max(0.001, t.visible ? easeBack(Wf[i]) : 0.001)); }); // on ne dessine que les modèles visibles
+  const trackW = sstep(0.6, 0.95, vis(track));
+  const mA = reduce ? 0 : 0.45 + 0.55 * trackW;
+  updateOrn(Wf, trackW, time, mobile);
+  update3D(Wf, trackW, time, mobile);
+  let offY = 0, rotZ = 0, sqY = 1, sqXZ = 1;
+  offY += 0.16 * mA * Wo[0] * Math.pow(Math.max(0, Math.sin(time * 2.4)), 6);                       // carotte : rebondit
+  const jel = Math.sin(time * 8) * Math.exp(-((time * 1.3) % 2.4) * 2);                             // betterave : gelée
+  sqY += 0.07 * jel * Wo[1] * mA; sqXZ -= 0.035 * jel * Wo[1] * mA;
+  rotZ += 0.035 * Math.sin(time * 46) * Math.pow(Math.max(0, Math.sin(time * 1.4)), 12) * Wo[2] * mA; // menthe : frisson
+  rotZ += 0.08 * Math.sin(time * 1.1) * Wo[3] * mA;                                                  // patate douce : balance
+  const sq = 0.5 + 0.5 * Math.sin(time * 2.2);                                                        // avocat : moelleux
+  sqY -= 0.05 * sq * Wo[4] * mA; sqXZ += 0.03 * sq * Wo[4] * mA;
+  sqY -= 0.03 * Wo[5] * mA;                                                                           // tomate : fond
+  meltDrips.forEach((d, k) => {
+    const g = (0.5 + 0.5 * Math.sin(time * 0.8 + k * 2)) * Wo[5];
+    d.scale.set(Wo[5] || 0.001, Math.max(0.001, 0.4 + 1.2 * g), Wo[5] || 0.001);
+    d.position.y = -0.28 - 0.2 * d.scale.y;
+  });
+  scoop.scale.set(sqXZ, sqY, sqXZ);
+  layer.scale.set(1 + (sqXZ - 1) * 0.5, 1 + (sqY - 1) * 0.5, 1 + (sqXZ - 1) * 0.5);
+  wrap.position.y += offY; wrap.rotation.z += rotZ;
+
+  // ---- style B : fond vif par parfum + grand nom derrière ----
+  if (outK > 0) cBg.copy(BGS[fi]).lerp(BGS[fi + 1], outK); else if (inK < 1) cBg.copy(BGS[fi - 1]).lerp(BGS[fi], inK); else cBg.copy(BGS[fi]);
+  // hors des parfums aussi, le fond garde la couleur de la glace affichée
+  tintEl.style.setProperty("--sky-top", "#" + cBg.getHexString());
+  tintEl.style.setProperty("--sky-bot", "#" + cG.copy(cBg).lerp(new THREE.Color("#ffffff"), 0.14).getHexString()); // presque uni, sans voile blanc
+  giantEl.style.opacity = trackW.toFixed(3);
+  const wantLight = trackW > 0.5 && F[fi].ink === "light";
+  if (wantLight !== inkLight) {
+    inkLight = wantLight;
+    rootStyle.setProperty("--cream", wantLight ? "#fff8ec" : "#14304d");
+    rootStyle.setProperty("--cream-2", wantLight ? "rgba(255, 248, 236, 0.72)" : "rgba(20, 48, 77, 0.62)");
+  }
+  // vue éclatée
+  scoop.position.y = SCOOP_Y + S.ex * 0.9;
+  layer.position.y = LAYER_Y + S.ex * 0.4;
+  cone.position.y = -S.ex * 0.45;
+
+
+  updateNav();
+  updateCallouts(dt);
+  renderer.render(scene, camera);
+  requestAnimationFrame(frame);
+}
+renderer.compile(scene, camera);
+requestAnimationFrame(frame);
+window.__finishLoad && window.__finishLoad();
+</script>
+</body>
+</html>
